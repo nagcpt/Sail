@@ -4,176 +4,294 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>UltraDash Marine v11</title>
-    
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dseg@2.1.0/css/dseg.min.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@900&display=swap" rel="stylesheet">
 
     <style>
-        :root { 
-            --bg: #000000; 
-            --on: #ffffff; 
-            --off: #151515; /* Segmentos fantasma */
-            --glow: 0 0 15px rgba(255, 255, 255, 0.4);
+        :root {
+            --bg:          #0a0a0a;
+            --on:          #ffffff;
+            --cell-bg:     #111111;
+            --cell-border: rgba(255,255,255,0.18);
+            --glow:        0 0 20px rgba(255,255,255,0.35);
+            --label-col:   rgba(255,255,255,0.55);
         }
 
-        body.night-mode { 
-            --bg: #050000; 
-            --on: #800020; 
-            --off: #1a0004;
-            --glow: 0 0 15px rgba(128, 0, 32, 0.5);
+        body.night-mode {
+            --bg:          #040000;
+            --on:          #cc001e;
+            --cell-bg:     #0e0003;
+            --cell-border: rgba(204,0,30,0.3);
+            --glow:        0 0 20px rgba(204,0,30,0.55);
+            --label-col:   rgba(204,0,30,0.55);
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            margin: 0; padding: 0; background-color: var(--bg); color: var(--on);
-            font-family: Arial, sans-serif; height: 100vh; overflow: hidden;
-            display: flex; flex-direction: column;
+            background: var(--bg);
+            color: var(--on);
+            font-family: 'Orbitron', sans-serif;
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Botões do Topo - Posição Mockup */
+        /* ── Top nav ── */
         #top-nav {
-            display: flex; justify-content: space-between; padding: 20px;
-            position: absolute; top: 0; width: 100%; box-sizing: border-box; z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            position: absolute;
+            top: 0; width: 100%;
+            z-index: 100;
         }
 
         .icon-btn {
-            background: rgba(255,255,255,0.1); border: 1px solid #333;
-            color: var(--on); border-radius: 8px; width: 45px; height: 45px;
-            display: flex; align-items: center; justify-content: center; font-size: 22px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: var(--on);
+            border-radius: 10px;
+            width: 44px; height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
         }
+        .icon-btn:active { background: rgba(255,255,255,0.15); }
 
-        /* Layout Centralizado conforme Mockup */
+        /* ── Main layout ── */
         #main-display {
-            flex: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; padding-top: 40px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            padding: 60px 16px 0;
         }
 
-        .label { 
-            font-size: 14px; letter-spacing: 3px; opacity: 0.7; 
-            font-weight: bold; margin: 10px 0;
+        /* ── Section label ── */
+        .label {
+            font-size: 11px;
+            letter-spacing: 5px;
+            color: var(--label-col);
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            margin-top: 4px;
         }
 
-        /* Digital LCD Styles */
-        .lcd-wrapper { position: relative; font-family: 'DSEG7-Classic', sans-serif; font-style: italic; }
-        .lcd-ghost { color: var(--off); position: absolute; top: 0; left: 0; }
-        .lcd-value { position: relative; text-shadow: var(--glow); z-index: 2; }
-
-        #heading-box { font-size: 28vw; }
-        #speed-box { font-size: 32vw; }
-
-        .degree-symbol { 
-            font-family: Arial, sans-serif; font-size: 10vw; 
-            position: absolute; right: -8vw; top: 2vw; 
+        /* ── Digit row ── */
+        .digit-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .separator { 
-            width: 90%; height: 1px; background: var(--on); opacity: 0.3;
-            margin: 20px 0; 
+        /* Individual digit cell */
+        .d-cell {
+            background: var(--cell-bg);
+            border: 1.5px solid var(--cell-border);
+            border-radius: 10px;
+            width: 23vw;
+            height: 26vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 18vw;
+            color: var(--on);
+            text-shadow: var(--glow);
+            line-height: 1;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.6), inset 0 -1px 3px rgba(255,255,255,0.03);
         }
 
-        /* Espaçamento extra na velocidade conforme mockup */
-        #speed-section { margin-top: 40px; display: flex; flex-direction: column; align-items: center; }
+        /* Decimal point cell – narrower */
+        .d-cell.dot {
+            width: 8vw;
+            font-size: 14vw;
+        }
 
-        /* Footer - Posição Mockup */
+        /* Degree symbol – outside box */
+        .deg-sym {
+            font-family: Arial, sans-serif;
+            font-size: 8vw;
+            color: var(--on);
+            align-self: flex-start;
+            margin-top: 2vw;
+            margin-left: 2px;
+            opacity: 0.85;
+        }
+
+        /* ── Separator ── */
+        .separator {
+            width: 90%;
+            height: 1px;
+            background: var(--on);
+            opacity: 0.12;
+            margin: 22px 0;
+        }
+
+        /* ── Footer ── */
         #footer {
-            padding: 20px 0; text-align: center; border-top: 1px solid #111;
-            font-family: 'Courier New', monospace; width: 100%;
+            padding: 12px 0 14px;
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            width: 100%;
         }
 
-        #coords { font-size: 13px; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: bold; }
-        #precision { font-size: 10px; opacity: 0.5; text-transform: uppercase; letter-spacing: 2px; }
+        #coords {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            color: var(--on);
+            opacity: 0.8;
+        }
+        #precision {
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            opacity: 0.35;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
 
-        /* Overlay Weather */
+        /* ── Weather overlay ── */
         #weather-overlay {
-            position: fixed; inset: 0; background: #000; z-index: 2000; display: none;
-            padding: 20px; flex-direction: column;
+            position: fixed; inset: 0;
+            background: #000;
+            z-index: 2000;
+            display: none;
+            padding: 20px;
+            flex-direction: column;
         }
         #weather-overlay.active { display: flex; }
-        .close-btn { padding: 15px; background: var(--on); color: #000; border: none; font-weight: bold; border-radius: 4px; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th, td { padding: 12px 5px; border-bottom: 1px solid #222; text-align: center; }
+
+        .close-btn {
+            padding: 14px;
+            background: var(--on);
+            color: #000;
+            border: none;
+            font-weight: bold;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            letter-spacing: 2px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; font-family: 'Courier New', monospace; }
+        th, td { padding: 11px 5px; border-bottom: 1px solid #1a1a1a; text-align: center; }
+        th { opacity: 0.45; font-size: 10px; letter-spacing: 2px; }
     </style>
 </head>
 <body>
 
     <div id="top-nav">
         <button id="openWeather" class="icon-btn">⚓</button>
-        <button id="toggleMode" class="icon-btn">🌓</button>
+        <button id="toggleMode"  class="icon-btn">🌓</button>
     </div>
 
     <div id="main-display">
+
+        <!-- HEADING -->
         <div class="label">HEADING</div>
-        <div class="lcd-wrapper" id="heading-box">
-            <div class="lcd-ghost">888</div>
-            <div class="lcd-value"><span id="val-heading">000</span><span class="degree-symbol">°</span></div>
+        <div class="digit-row">
+            <div class="d-cell" id="h0">0</div>
+            <div class="d-cell" id="h1">0</div>
+            <div class="d-cell" id="h2">0</div>
+            <span class="deg-sym">°</span>
         </div>
 
         <div class="separator"></div>
 
-        <div id="speed-section">
-            <div class="lcd-wrapper" id="speed-box">
-                <div class="lcd-ghost">88.8</div>
-                <div class="lcd-value" id="val-speed">00.0</div>
-            </div>
-            <div class="label">KNOTS</div>
+        <!-- SPEED -->
+        <div class="digit-row">
+            <div class="d-cell" id="s0">0</div>
+            <div class="d-cell" id="s1">0</div>
+            <div class="d-cell dot"id="s2">.</div>
+            <div class="d-cell" id="s3">0</div>
         </div>
+        <div class="label" style="margin-top:12px;">KNOTS</div>
+
     </div>
 
     <div id="footer">
-        <div id="coords">LAT: --.----° N | LON: --.----° W</div>
-        <div id="precision">PRECISÃO: --M | GPS STATUS OK</div>
+        <div id="coords">LAT: --.----° N &nbsp;|&nbsp; LON: --.----° W</div>
+        <div id="precision">PRECISÃO: --M &nbsp;|&nbsp; GPS STATUS OK</div>
     </div>
 
     <div id="weather-overlay">
-        <button class="close-btn" onclick="toggleWeather()">VOLTAR</button>
+        <button class="close-btn" onclick="toggleWeather()">← VOLTAR</button>
         <div id="meteo-body"></div>
     </div>
 
     <script>
         const state = { lat: null, lon: null, speed: 0 };
-        
-        // Elementos
-        const elSpeed = document.getElementById('val-speed');
-        const elHeading = document.getElementById('val-heading');
+
         const elCoords = document.getElementById('coords');
-        const elPrec = document.getElementById('precision');
-        const overlay = document.getElementById('weather-overlay');
+        const elPrec   = document.getElementById('precision');
+        const overlay  = document.getElementById('weather-overlay');
 
-        // Modo Noite
-        document.getElementById('toggleMode').onclick = () => document.body.classList.toggle('night-mode');
+        function setHeading(val) {
+            const s = Math.round(val).toString().padStart(3, '0');
+            document.getElementById('h0').textContent = s[0];
+            document.getElementById('h1').textContent = s[1];
+            document.getElementById('h2').textContent = s[2];
+        }
 
-        // GPS
+        function setSpeed(kn) {
+            let s;
+            if (kn < 0.1) {
+                s = '000';
+            } else {
+                // e.g. 12.5 → remove dot → "125"
+                s = kn.toFixed(1).replace('.', '').padStart(3, '0');
+            }
+            document.getElementById('s0').textContent = s[0];
+            document.getElementById('s1').textContent = s[1];
+            // s2 is static dot
+            document.getElementById('s3').textContent = s[2];
+        }
+
+        setHeading(0);
+        setSpeed(0);
+
+        document.getElementById('toggleMode').onclick = () =>
+            document.body.classList.toggle('night-mode');
+
         if ("geolocation" in navigator) {
             navigator.geolocation.watchPosition((pos) => {
                 const { latitude, longitude, speed, heading, accuracy } = pos.coords;
-                state.lat = latitude;
-                state.lon = longitude;
+                state.lat   = latitude;
+                state.lon   = longitude;
                 state.speed = speed || 0;
 
-                // Velocidade em Knots (00.0)
-                let kn = state.speed * 1.94384;
-                elSpeed.innerText = (kn > 0.1 ? kn.toFixed(1) : "00.0").padStart(4, '0');
+                setSpeed(state.speed * 1.94384);
 
-                // Heading (000)
-                if (heading !== null && state.speed > 0.5) {
-                    elHeading.innerText = Math.round(heading).toString().padStart(3, '0');
-                }
+                if (heading !== null && state.speed > 0.5)
+                    setHeading(heading);
 
-                // Coordenadas formatadas como no Mockup
                 const latD = Math.abs(latitude).toFixed(4);
                 const lonD = Math.abs(longitude).toFixed(4);
-                elCoords.innerText = `LAT: ${latD}° ${latitude >= 0 ? 'N' : 'S'} | LON: ${lonD}° ${longitude >= 0 ? 'E' : 'W'}`;
-                elPrec.innerText = `PRECISÃO: ${Math.round(accuracy)}M | GPS OK`;
+                elCoords.innerHTML = `LAT: ${latD}° ${latitude >= 0 ? 'N' : 'S'} &nbsp;|&nbsp; LON: ${lonD}° ${longitude >= 0 ? 'E' : 'W'}`;
+                elPrec.textContent = `PRECISÃO: ${Math.round(accuracy)}M  |  GPS OK`;
             }, null, { enableHighAccuracy: true });
         }
 
-        // Bússola
         window.addEventListener('deviceorientationabsolute', (e) => {
-            if (state.speed < 1 && e.alpha !== null) {
-                let h = Math.round(360 - e.alpha);
-                elHeading.innerText = h.toString().padStart(3, '0');
-            }
+            if (state.speed < 1 && e.alpha !== null)
+                setHeading(360 - e.alpha);
         }, true);
 
-        // Weather
         function toggleWeather() {
             if (!state.lat) return alert("Sinal GPS insuficiente.");
             overlay.classList.toggle('active');
@@ -183,24 +301,33 @@
 
         async function fetchWeather() {
             const body = document.getElementById('meteo-body');
-            body.innerHTML = "<p style='text-align:center'>A carregar previsões...</p>";
+            body.innerHTML = "<p style='text-align:center;opacity:.5;font-family:Courier New'>A carregar…</p>";
             try {
                 const url = `https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=auto`;
                 const mar = `https://marine-api.open-meteo.com/v1/marine?latitude=${state.lat}&longitude=${state.lon}&hourly=wave_height&timezone=auto`;
                 const [r1, r2] = await Promise.all([fetch(url), fetch(mar)]);
-                const d1 = await r1.json(); const d2 = await r2.json();
-                
-                let html = "<table><tr><th>H</th><th>Kn</th><th>Dir</th><th>Onda</th></tr>";
-                for (let i = new Date().getHours(); i < new Date().getHours() + 12; i++) {
+                const d1 = await r1.json();
+                const d2 = await r2.json();
+                let html = "<table><tr><th>HORA</th><th>KN</th><th>DIR</th><th>ONDA</th></tr>";
+                const h0 = new Date().getHours();
+                for (let i = h0; i < h0 + 12; i++) {
                     if (!d1.hourly) break;
-                    html += `<tr><td>${d1.hourly.time[i].split('T')[1]}</td><td>${d1.hourly.wind_speed_10m[i].toFixed(1)}</td><td>${d1.hourly.wind_direction_10m[i]}°</td><td>${d2.hourly ? d2.hourly.wave_height[i].toFixed(1) + 'm' : '--'}</td></tr>`;
+                    html += `<tr>
+                        <td>${d1.hourly.time[i].split('T')[1]}</td>
+                        <td>${d1.hourly.wind_speed_10m[i].toFixed(1)}</td>
+                        <td>${d1.hourly.wind_direction_10m[i]}°</td>
+                        <td>${d2.hourly ? d2.hourly.wave_height[i].toFixed(1)+'m' : '--'}</td>
+                    </tr>`;
                 }
                 body.innerHTML = html + "</table>";
-            } catch (e) { body.innerHTML = "Erro de rede."; }
+            } catch(e) {
+                body.innerHTML = "<p style='opacity:.5'>Erro de rede.</p>";
+            }
         }
 
-        // Wake Lock
-        async function wake() { try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch(e) {} }
+        async function wake() {
+            try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch(e) {}
+        }
         wake();
     </script>
 </body>
