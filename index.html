@@ -153,6 +153,13 @@
             font-size: 15vw;
         }
 
+        /* Glifo esticado verticalmente 2× mantendo largura */
+        .dc-g {
+            display: inline-block;
+            transform: scaleY(2);
+            transform-origin: center center;
+        }
+
         /* Degree symbol — no box */
         .deg {
             font-family: Arial, Helvetica, sans-serif;
@@ -242,19 +249,19 @@
         <div class="lbl lbl-top">Heading</div>
 
         <div class="drow" id="heading-row">
-            <div class="dc" id="h0">0</div>
-            <div class="dc" id="h1">0</div>
-            <div class="dc" id="h2">0</div>
+            <div class="dc" id="h0"><span class="dc-g">0</span></div>
+            <div class="dc" id="h1"><span class="dc-g">0</span></div>
+            <div class="dc" id="h2"><span class="dc-g">0</span></div>
             <span class="deg">°</span>
         </div>
 
         <div class="sep"></div>
 
         <div class="drow" id="speed-row">
-            <div class="dc" id="s0">0</div>
-            <div class="dc" id="s1">0</div>
-            <div class="dc dot">.</div>
-            <div class="dc" id="s2">0</div>
+            <div class="dc" id="s0"><span class="dc-g">0</span></div>
+            <div class="dc" id="s1"><span class="dc-g">0</span></div>
+            <div class="dc dot"><span class="dc-g">.</span></div>
+            <div class="dc" id="s2"><span class="dc-g">0</span></div>
         </div>
 
         <div class="lbl lbl-bottom">Knots</div>
@@ -279,8 +286,8 @@
 const S = { lat: null, lon: null, spd: 0 };
 
 /* ── DOM refs ── */
-const H = [0,1,2].map(i => document.getElementById('h' + i));
-const SP = [0,1,2].map(i => document.getElementById('s' + i));
+const H  = [0,1,2].map(i => document.querySelector('#h' + i + ' .dc-g'));
+const SP = [0,1,2].map(i => document.querySelector('#s' + i + ' .dc-g'));
 const elCoords = document.getElementById('coords');
 const elPrec   = document.getElementById('prec');
 const wxPanel  = document.getElementById('wx');
