@@ -10,379 +10,196 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Barlow+Condensed:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #111214; --bg2: #191b1f; --bg3: #1f2126;
+  --border: #2a2d35; --dim: #3a3d47; --muted: #555b69; --sub: #7a8194; --white: #e8eaf0;
+  --amber: #f5a623; --amber-dim: #7a5010;
+  --cyan: #00c8e8;  --cyan-dim: #0a4a55;
+  --blue: #4a9eff;  --blue-dim: #0d2a4a;
+  --green: #3dcc7c; --green-dim: #0a3320;
+  --red: #ff4d4d;
+}
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg); color: var(--white);
+  font-family: 'Barlow Condensed', sans-serif;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+#app {
+  display: flex; flex-direction: column;
+  height: 100dvh; height: 100vh;
+  padding: env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+}
 
-  :root {
-    --bg: #111214;
-    --bg2: #191b1f;
-    --bg3: #1f2126;
-    --border: #2a2d35;
-    --dim: #3a3d47;
-    --muted: #555b69;
-    --sub: #7a8194;
-    --white: #e8eaf0;
-    --amber: #f5a623;
-    --amber-dim: #7a5010;
-    --cyan: #00c8e8;
-    --cyan-dim: #0a4a55;
-    --blue: #4a9eff;
-    --blue-dim: #0d2a4a;
-    --green: #3dcc7c;
-    --green-dim: #0a3320;
-    --red: #ff4d4d;
-  }
+/* HEADER */
+#header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#header-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 13px; font-weight: 700;
+  letter-spacing: 4px; color: var(--sub);
+}
+#gps-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 1.5px; color: var(--muted);
+  text-transform: uppercase;
+}
+#gps-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--muted); transition: background 0.4s;
+}
+#gps-dot.active   { background: var(--green); }
+#gps-dot.searching{ background: var(--amber); animation: blink 1s infinite; }
+#gps-dot.error    { background: var(--red); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
 
-  html, body {
-    width: 100%; height: 100%;
-    background: var(--bg);
-    color: var(--white);
-    font-family: 'Barlow Condensed', sans-serif;
-    overflow: hidden;
-    -webkit-tap-highlight-color: transparent;
-    -webkit-font-smoothing: antialiased;
-  }
+/* COMPASS STRIP */
+#compass-strip {
+  flex-shrink: 0; height: 40px;
+  position: relative; overflow: hidden;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+}
+#compass-canvas { position: absolute; top:0; left:0; width:100%; height:100%; }
+#compass-cursor {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 10px solid var(--amber);
+}
 
-  #app {
-    display: flex;
-    flex-direction: column;
-    height: 100dvh;
-    height: 100vh;
-    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
-  }
+/* METRIC BLOCKS */
+#metrics { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.metric-block {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  border-bottom: 1px solid var(--border);
+  padding: 4px 0;
+}
+.metric-label {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 0;
+}
+.metric-value {
+  font-family: 'Orbitron', monospace;
+  font-weight: 900; line-height: 1;
+}
+.metric-unit {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px; font-weight: 600;
+  letter-spacing: 2px; color: var(--muted);
+  margin-top: 2px;
+}
+.metric-sub {
+  font-size: 14px; font-weight: 600;
+  letter-spacing: 2px; color: var(--muted);
+  margin-top: 2px; min-height: 20px;
+}
+#block-rumo  .metric-value { font-size: clamp(72px,20vw,100px); color: var(--amber); }
+#block-rumo  .metric-unit  { color: var(--amber-dim); letter-spacing: 3px; }
+#block-speed .metric-value { font-size: clamp(64px,18vw,88px);  color: var(--cyan);  }
+#block-speed .metric-unit  { color: var(--cyan-dim); }
 
-  /* ── HEADER ── */
-  #header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px 8px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
+/* MARINE ROW */
+#marine-row {
+  display: flex; flex-shrink: 0;
+  height: 105px; border-bottom: 1px solid var(--border);
+}
+.marine-block {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+}
+.marine-block:first-child { border-right: 1px solid var(--border); }
+.marine-label { font-size: 10px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--muted); }
+.marine-value { font-family: 'Orbitron', monospace; font-weight: 700; font-size: clamp(28px,8vw,38px); line-height: 1; }
+.marine-unit  { font-size: 12px; font-weight: 600; letter-spacing: 1.5px; color: var(--muted); }
+.marine-met   { font-size: 9px;  font-weight: 600; letter-spacing: 1px;   color: var(--dim); text-transform: uppercase; font-family: 'Orbitron', monospace; min-height: 13px; }
+#val-waves { color: var(--blue); }
+#val-wind  { color: var(--green); }
 
-  #header-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 4px;
-    color: var(--sub);
-    text-transform: uppercase;
-  }
+/* FOOTER */
+#gps-footer {
+  flex-shrink: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 8px 16px 12px; gap: 3px;
+  background: var(--bg2);
+}
+#gps-coords {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px; font-weight: 400;
+  letter-spacing: 1.5px; color: var(--sub);
+  text-align: center;
+}
+#gps-meta {
+  display: flex; gap: 16px;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 1px; color: var(--dim);
+  text-transform: uppercase;
+}
+#gps-time {
+  font-size: 11px; font-weight: 400;
+  letter-spacing: 2px; color: var(--dim);
+  font-family: 'Orbitron', monospace;
+}
 
-  #gps-status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
+/* SPLASH */
+#splash {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 18px; z-index: 999;
+  transition: opacity 0.5s;
+}
+#splash.gone { opacity: 0; pointer-events: none; }
+#splash-logo { font-family: 'Orbitron', monospace; font-size: 36px; font-weight: 900; letter-spacing: 10px; color: var(--white); }
+#splash-sub  { font-size: 13px; font-weight: 600; letter-spacing: 3px; color: var(--sub); text-transform: uppercase; }
+#splash-msg  { font-size: 11px; font-weight: 600; letter-spacing: 2px; color: var(--amber); text-transform: uppercase; animation: blink 1.3s infinite; }
+#start-btn {
+  margin-top: 10px; padding: 14px 44px;
+  background: var(--amber); color: #000; border: none; border-radius: 3px;
+  font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700;
+  letter-spacing: 3px; text-transform: uppercase; cursor: pointer;
+}
+#start-btn:active { opacity: .75; }
 
-  #gps-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--muted);
-    transition: background 0.5s;
-  }
-  #gps-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  #gps-dot.searching { background: var(--amber); animation: pulse 1.2s infinite; }
-  #gps-dot.error { background: var(--red); }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-
-  /* ── MAIN METRICS ── */
-  #metrics {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .metric-block {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    border-bottom: 1px solid var(--border);
-    padding: 4px 0;
-  }
-
-  .metric-label {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 2px;
-  }
-
-  .metric-value {
-    font-family: 'Orbitron', monospace;
-    font-weight: 900;
-    line-height: 1;
-    transition: color 0.4s;
-  }
-
-  .metric-unit {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    color: var(--muted);
-    margin-top: 4px;
-  }
-
-  .metric-sub {
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    color: var(--muted);
-    margin-top: 2px;
-    min-height: 18px;
-  }
-
-  /* heading */
-  #block-rumo .metric-value { font-size: clamp(72px, 20vw, 100px); color: var(--amber); }
-  #block-rumo .metric-unit  { color: var(--amber-dim); letter-spacing: 3px; }
-
-  /* speed */
-  #block-speed .metric-value { font-size: clamp(64px, 18vw, 88px); color: var(--cyan); }
-  #block-speed .metric-unit  { color: var(--cyan-dim); }
-
-  /* ── MARINE ROW ── */
-  #marine-row {
-    display: flex;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border);
-    height: 100px;
-  }
-
-  .marine-block {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-  }
-
-  .marine-block:first-child { border-right: 1px solid var(--border); }
-
-  .marine-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .marine-value {
-    font-family: 'Orbitron', monospace;
-    font-weight: 700;
-    font-size: clamp(28px, 8vw, 38px);
-    line-height: 1;
-    transition: color 0.4s;
-  }
-
-  .marine-unit {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    color: var(--muted);
-  }
-
-  #val-waves { color: var(--blue); }
-  #val-wind  { color: var(--green); }
-
-  #marine-update {
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    color: var(--dim);
-    text-transform: uppercase;
-    min-height: 12px;
-  }
-
-  /* ── COMPASS STRIP ── */
-  #compass-strip {
-    flex-shrink: 0;
-    height: 38px;
-    position: relative;
-    overflow: hidden;
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-  }
-
-  #compass-canvas {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-  }
-
-  #compass-cursor {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 9px solid var(--amber);
-  }
-
-  /* ── GPS FOOTER ── */
-  #gps-footer {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 16px 10px;
-    gap: 3px;
-    background: var(--bg2);
-  }
-
-  #gps-coords {
-    font-family: 'Orbitron', monospace;
-    font-size: 12px;
-    font-weight: 400;
-    letter-spacing: 1.5px;
-    color: var(--sub);
-    text-align: center;
-  }
-
-  #gps-meta {
-    display: flex;
-    gap: 16px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    color: var(--dim);
-    text-transform: uppercase;
-  }
-
-  #gps-time {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    color: var(--dim);
-    text-transform: uppercase;
-    font-family: 'Orbitron', monospace;
-  }
-
-  /* ── SPLASH ── */
-  #splash {
-    position: fixed; inset: 0;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    z-index: 999;
-    transition: opacity 0.6s;
-  }
-
-  #splash.hidden { opacity: 0; pointer-events: none; }
-
-  #splash-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 32px;
-    font-weight: 900;
-    letter-spacing: 8px;
-    color: var(--white);
-  }
-
-  #splash-sub {
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 3px;
-    color: var(--sub);
-    text-transform: uppercase;
-  }
-
-  #splash-msg {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    color: var(--amber);
-    text-transform: uppercase;
-    animation: pulse 1.4s infinite;
-  }
-
-  #start-btn {
-    margin-top: 12px;
-    padding: 14px 40px;
-    background: var(--amber);
-    color: #000;
-    border: none;
-    border-radius: 4px;
-    font-family: 'Orbitron', monospace;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: opacity 0.2s;
-  }
-  #start-btn:active { opacity: 0.75; }
-
-  /* ── NO-GPS ERROR ── */
-  #no-gps {
-    display: none;
-    position: fixed; inset: 0;
-    background: var(--bg);
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 12px;
-    z-index: 998;
-    padding: 32px;
-    text-align: center;
-  }
-  #no-gps.show { display: flex; }
-  #no-gps h2 { font-family: 'Orbitron', monospace; font-size: 16px; color: var(--red); letter-spacing: 2px; }
-  #no-gps p  { font-size: 14px; color: var(--sub); line-height: 1.6; }
-
-  /* keep screen on hint */
-  #wakelock-badge {
-    position: absolute;
-    top: 10px; right: 10px;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    color: var(--dim);
-    text-transform: uppercase;
-  }
+/* NO GPS */
+#no-gps {
+  display: none; position: fixed; inset: 0;
+  background: var(--bg);
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 14px;
+  z-index: 998; padding: 32px; text-align: center;
+}
+#no-gps.show { display: flex; }
+#no-gps h2 { font-family: 'Orbitron', monospace; font-size: 16px; color: var(--red); letter-spacing: 2px; }
+#no-gps p  { font-size: 14px; color: var(--sub); line-height: 1.7; }
 </style>
 </head>
 <body>
 
-<!-- SPLASH -->
 <div id="splash">
-  <div id="splash-title">NAV</div>
+  <div id="splash-logo">NAV</div>
   <div id="splash-sub">Instrumento de Navegação</div>
-  <div id="splash-msg">A aguardar GPS...</div>
+  <div id="splash-msg">Aguardar permissão GPS...</div>
   <button id="start-btn" onclick="startApp()">INICIAR</button>
 </div>
 
-<!-- NO GPS -->
 <div id="no-gps">
   <h2>GPS INDISPONÍVEL</h2>
   <p>Permita o acesso à localização nas definições do browser para usar esta aplicação.</p>
 </div>
 
-<!-- MAIN APP -->
 <div id="app">
-  <!-- Header -->
   <div id="header">
     <div id="header-title">NAV</div>
     <div id="gps-status">
@@ -391,51 +208,42 @@
     </div>
   </div>
 
-  <!-- Compass strip -->
   <div id="compass-strip">
     <canvas id="compass-canvas"></canvas>
     <div id="compass-cursor"></div>
   </div>
 
-  <!-- Metrics -->
   <div id="metrics">
-
-    <!-- Rumo -->
     <div class="metric-block" id="block-rumo">
       <div class="metric-label">Rumo</div>
       <div class="metric-value" id="val-rumo">---</div>
-      <div class="metric-unit">°</div>
+      <div class="metric-unit">graus</div>
       <div class="metric-sub" id="val-cardinal">—</div>
     </div>
-
-    <!-- Velocidade -->
     <div class="metric-block" id="block-speed">
       <div class="metric-label">Velocidade</div>
       <div class="metric-value" id="val-speed">--.-</div>
       <div class="metric-unit">nós</div>
     </div>
-
   </div>
 
-  <!-- Marine data -->
   <div id="marine-row">
     <div class="marine-block">
       <div class="marine-label">Ondas</div>
       <div class="marine-value" id="val-waves">--.-</div>
-      <div class="marine-unit">m</div>
-      <div id="marine-update-waves" class="marine-unit" style="font-size:9px;color:var(--dim)"></div>
+      <div class="marine-unit">metros</div>
+      <div class="marine-met" id="met-waves"></div>
     </div>
     <div class="marine-block">
       <div class="marine-label">Vento</div>
       <div class="marine-value" id="val-wind">---</div>
       <div class="marine-unit">nós</div>
-      <div id="marine-update-wind" class="marine-unit" style="font-size:9px;color:var(--dim)"></div>
+      <div class="marine-met" id="met-wind"></div>
     </div>
   </div>
 
-  <!-- GPS Footer -->
   <div id="gps-footer">
-    <div id="gps-coords">-- -- --  ·  -- -- --</div>
+    <div id="gps-coords">-- -- -- · -- -- --</div>
     <div id="gps-meta">
       <span id="gps-acc">ACC ---</span>
       <span id="gps-alt">ALT ---</span>
@@ -445,292 +253,254 @@
 </div>
 
 <script>
-/* ───────── STATE ───────── */
-const S = {
-  heading: null,
-  speed: null,
-  lat: null,
-  lon: null,
-  alt: null,
-  acc: null,
-  prevPos: null,
-  weatherLat: null,
-  weatherLon: null,
-  waves: null,
-  wind: null,
-  weatherTime: null,
-  started: false
+/* ═══════════════════════════════════════════
+   STATE  — updated only by GPS callbacks
+   RENDER — runs every 500ms independently
+   ═══════════════════════════════════════════ */
+
+const ST = {
+  heading : null,   // degrees
+  speed   : null,   // knots
+  lat     : null,
+  lon     : null,
+  alt     : null,
+  acc     : null,
+  fix     : false,
+  prevLat : null,
+  prevLon : null,
+  prevT   : null,
+  waves   : null,
+  wind    : null,
+  metaTime: null,
+  metaLat : null,
+  metaLon : null,
+  watchId : null,
 };
 
-const WEATHER_INTERVAL = 5 * 60 * 1000; // 5 min
-const KNOTS = 1.94384;
+const KNOTS  = 1.94384;
+const WX_INT = 5 * 60 * 1000; // 5 min
+const WX_DIST= 10000;          // 10 km
 
-/* ───────── UTILS ───────── */
-function haversineM(la1, lo1, la2, lo2) {
-  const R = 6371000, r = Math.PI/180;
-  const f1 = la1*r, f2 = la2*r, df = (la2-la1)*r, dl = (lo2-lo1)*r;
-  const a = Math.sin(df/2)**2 + Math.cos(f1)*Math.cos(f2)*Math.sin(dl/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+/* ─── Math helpers ─── */
+function toRad(d){ return d * Math.PI / 180; }
+
+function haversineM(la1,lo1,la2,lo2){
+  const R=6371000, f1=toRad(la1), f2=toRad(la2);
+  const df=toRad(la2-la1), dl=toRad(lo2-lo1);
+  const a=Math.sin(df/2)**2 + Math.cos(f1)*Math.cos(f2)*Math.sin(dl/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-function bearing(la1, lo1, la2, lo2) {
-  const r = Math.PI/180;
-  const y = Math.sin((lo2-lo1)*r)*Math.cos(la2*r);
-  const x = Math.cos(la1*r)*Math.sin(la2*r) - Math.sin(la1*r)*Math.cos(la2*r)*Math.cos((lo2-lo1)*r);
-  return (Math.atan2(y,x)*180/Math.PI + 360) % 360;
+function calcBearing(la1,lo1,la2,lo2){
+  const y=Math.sin(toRad(lo2-lo1))*Math.cos(toRad(la2));
+  const x=Math.cos(toRad(la1))*Math.sin(toRad(la2))-Math.sin(toRad(la1))*Math.cos(toRad(la2))*Math.cos(toRad(lo2-lo1));
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
 }
 
-function cardinal(deg) {
-  const d = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-  return d[Math.round(deg/22.5) % 16];
+function toCardinal(d){
+  const dirs=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(d/22.5)%16];
 }
 
-function dms(dec, isLat) {
-  const abs = Math.abs(dec);
-  const d = Math.floor(abs);
-  const m = Math.floor((abs - d) * 60);
-  const s = ((abs - d - m/60) * 3600).toFixed(1);
-  const hem = isLat ? (dec >= 0 ? 'N' : 'S') : (dec >= 0 ? 'E' : 'W');
-  return `${String(d).padStart(isLat?2:3,'0')}°${String(m).padStart(2,'0')}'${String(s).padStart(4,'0')}"${hem}`;
+function toDMS(dec, isLat){
+  const abs=Math.abs(dec), d=Math.floor(abs);
+  const m=Math.floor((abs-d)*60);
+  const s=((abs-d-m/60)*3600).toFixed(1);
+  const h=isLat?(dec>=0?'N':'S'):(dec>=0?'E':'W');
+  return `${String(d).padStart(isLat?2:3,'0')}°${String(m).padStart(2,'0')}'${String(s).padStart(4,'0')}"${h}`;
 }
 
-function fmtTime(date) {
-  return date.toTimeString().slice(0,8);
+function hhmmss(d){
+  return d.toTimeString().slice(0,8);
 }
 
-/* ───────── DISPLAY ───────── */
-function setEl(id, val) { document.getElementById(id).textContent = val; }
+/* ─── DOM helpers ─── */
+const $=id=>document.getElementById(id);
+function setText(id,v){ const el=$(id); if(el.textContent!==v) el.textContent=v; }
 
-function updateDisplay() {
-  const now = new Date();
-  setEl('gps-time', fmtTime(now));
+/* ─── GPS callback ─── */
+function onPosition(pos){
+  const c=pos.coords, now=Date.now();
 
-  if (S.heading !== null) {
-    setEl('val-rumo', Math.round(S.heading).toString().padStart(3,'0'));
-    setEl('val-cardinal', cardinal(S.heading));
+  /* heading */
+  if(c.heading!=null && !isNaN(c.heading) && c.speed>0.2){
+    ST.heading = c.heading;
+  } else if(ST.prevLat!=null){
+    const d=haversineM(ST.prevLat,ST.prevLon,c.latitude,c.longitude);
+    if(d>2) ST.heading=calcBearing(ST.prevLat,ST.prevLon,c.latitude,c.longitude);
   }
 
-  if (S.speed !== null) {
-    setEl('val-speed', S.speed.toFixed(1));
+  /* speed */
+  if(c.speed!=null && !isNaN(c.speed) && c.speed>=0){
+    ST.speed = c.speed * KNOTS;
+  } else if(ST.prevLat!=null && ST.prevT!=null){
+    const d=haversineM(ST.prevLat,ST.prevLon,c.latitude,c.longitude);
+    const dt=(now-ST.prevT)/1000;
+    if(dt>0.5 && dt<30) ST.speed=(d/dt)*KNOTS;
   }
 
-  if (S.waves !== null) setEl('val-waves', S.waves.toFixed(1));
-  if (S.wind  !== null) setEl('val-wind',  Math.round(S.wind).toString());
+  ST.prevLat=c.latitude; ST.prevLon=c.longitude; ST.prevT=now;
+  ST.lat=c.latitude; ST.lon=c.longitude;
+  ST.alt=c.altitude; ST.acc=c.accuracy;
+  ST.fix=true;
 
-  if (S.lat !== null && S.lon !== null) {
-    setEl('gps-coords', `${dms(S.lat, true)}  ·  ${dms(S.lon, false)}`);
-  }
+  /* GPS status dot */
+  const dot=$('gps-dot');
+  if(c.accuracy<25)     { dot.className='active';    setText('gps-status-text','GPS FIX'); }
+  else if(c.accuracy<80){ dot.className='active';    setText('gps-status-text','GPS OK');  }
+  else                  { dot.className='searching'; setText('gps-status-text','A FIXAR'); }
 
-  if (S.acc !== null) setEl('gps-acc', `ACC ${Math.round(S.acc)}m`);
-  if (S.alt !== null) setEl('gps-alt', `ALT ${Math.round(S.alt)}m`);
-
-  drawCompass(S.heading || 0);
+  maybeWeather();
 }
 
-/* ───────── COMPASS STRIP ───────── */
-const COMPASS_MARKS = [
-  [0,'N'],[22.5,''],[45,'NE'],[67.5,''],[90,'E'],[112.5,''],[135,'SE'],
-  [157.5,''],[180,'S'],[202.5,''],[225,'SW'],[247.5,''],[270,'W'],
-  [292.5,''],[315,'NW'],[337.5,'']
-];
-
-function drawCompass(hdg) {
-  const canvas = document.getElementById('compass-canvas');
-  const ctx = canvas.getContext('2d');
-  const W = canvas.offsetWidth, H = canvas.offsetHeight;
-  if (W === 0) return;
-  canvas.width = W; canvas.height = H;
-
-  ctx.clearRect(0,0,W,H);
-  const pxPerDeg = W / 90; // 90° visible range
-  const centerDeg = hdg;
-
-  COMPASS_MARKS.forEach(([deg, label]) => {
-    // handle wrap
-    [-360, 0, 360].forEach(offset => {
-      const d = deg + offset;
-      const diff = d - centerDeg;
-      if (Math.abs(diff) > 60) return;
-      const x = W/2 + diff * pxPerDeg;
-      const isMajor = label !== '';
-      ctx.strokeStyle = isMajor ? '#5a6070' : '#343840';
-      ctx.lineWidth = isMajor ? 1.5 : 1;
-      ctx.beginPath();
-      ctx.moveTo(x, isMajor ? 4 : 10);
-      ctx.lineTo(x, H - (isMajor ? 4 : 10));
-      ctx.stroke();
-
-      if (label) {
-        const isCardinal = ['N','S','E','W'].includes(label);
-        ctx.fillStyle = isCardinal ? '#f5a623' : '#4a5060';
-        ctx.font = `${isCardinal ? 700 : 400} ${isCardinal ? 13 : 10}px 'Barlow Condensed', sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, x, H/2);
-      }
-
-      if (Math.abs(deg + offset - Math.round(hdg/10)*10) < 5) {
-        // degree every 10°
-      }
-    });
-  });
-
-  // every 10° ticks
-  for (let d = -90; d <= 90; d += 10) {
-    const actualDeg = ((centerDeg + d) % 360 + 360) % 360;
-    const x = W/2 + d * pxPerDeg;
-    if (x < 0 || x > W) continue;
-    ctx.fillStyle = '#3a3d47';
-    ctx.font = `400 9px 'Orbitron', monospace`;
-    ctx.textAlign = 'center';
-    ctx.fillText(Math.round(actualDeg), x, H - 5);
-  }
+function onGpsError(e){
+  $('gps-dot').className='error';
+  setText('gps-status-text','ERRO GPS');
+  if(e.code===e.PERMISSION_DENIED) $('no-gps').classList.add('show');
 }
 
-/* ───────── WEATHER ───────── */
-async function fetchWeather(lat, lon) {
-  try {
-    const [marineRes, windRes] = await Promise.all([
-      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=wave_height,swell_wave_height&length_unit=metric`),
+/* ─── Weather ─── */
+let wxFetching=false;
+async function fetchWeather(lat,lon){
+  if(wxFetching) return;
+  wxFetching=true;
+  try{
+    const [mRes,wRes]=await Promise.all([
+      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=wave_height`),
       fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=wind_speed_10m&wind_speed_unit=kn`)
     ]);
-
-    if (marineRes.ok) {
-      const md = await marineRes.json();
-      if (md.current && md.current.wave_height != null) {
-        S.waves = md.current.wave_height;
-      }
-    }
-
-    if (windRes.ok) {
-      const wd = await windRes.json();
-      if (wd.current && wd.current.wind_speed_10m != null) {
-        S.wind = wd.current.wind_speed_10m;
-      }
-    }
-
-    S.weatherTime = new Date();
-    S.weatherLat = lat;
-    S.weatherLon = lon;
-
-    const t = fmtTime(S.weatherTime);
-    setEl('marine-update-waves', `MET ${t}`);
-    setEl('marine-update-wind',  `MET ${t}`);
-
-  } catch(e) {
-    console.warn('Weather fetch failed:', e);
-  }
+    if(mRes.ok){ const d=await mRes.json(); if(d.current?.wave_height!=null) ST.waves=d.current.wave_height; }
+    if(wRes.ok){ const d=await wRes.json(); if(d.current?.wind_speed_10m!=null) ST.wind=d.current.wind_speed_10m; }
+    ST.metaTime=new Date(); ST.metaLat=lat; ST.metaLon=lon;
+  }catch(e){ console.warn('wx',e); }
+  wxFetching=false;
 }
 
-function maybeRefreshWeather() {
-  if (!S.lat || !S.lon) return;
-  const now = Date.now();
-  const noData   = S.weatherTime === null;
-  const tooOld   = S.weatherTime && (now - S.weatherTime > WEATHER_INTERVAL);
-  const movedFar = S.weatherLat && haversineM(S.lat, S.lon, S.weatherLat, S.weatherLon) > 10000;
-  if (noData || tooOld || movedFar) fetchWeather(S.lat, S.lon);
+function maybeWeather(){
+  if(!ST.lat) return;
+  const noData = ST.metaTime===null;
+  const old    = ST.metaTime && (Date.now()-ST.metaTime>WX_INT);
+  const moved  = ST.metaLat  && haversineM(ST.lat,ST.lon,ST.metaLat,ST.metaLon)>WX_DIST;
+  if(noData||old||moved) fetchWeather(ST.lat,ST.lon);
 }
 
-/* ───────── GPS ───────── */
-function onPosition(pos) {
-  const c = pos.coords;
-  const now = Date.now();
+/* ─── Compass ─── */
+const TICKS=[
+  [0,'N'],[45,'NE'],[90,'E'],[135,'SE'],
+  [180,'S'],[225,'SW'],[270,'W'],[315,'NW']
+];
 
-  // heading
-  if (c.heading != null && !isNaN(c.heading)) {
-    S.heading = c.heading;
-  } else if (S.prevPos && S.lat !== null) {
-    const d = haversineM(S.prevPos.lat, S.prevPos.lon, c.latitude, c.longitude);
-    if (d > 3) S.heading = bearing(S.prevPos.lat, S.prevPos.lon, c.latitude, c.longitude);
+function drawCompass(hdg){
+  const canvas=$('compass-canvas');
+  const W=canvas.clientWidth, H=canvas.clientHeight;
+  if(!W||!H) return;
+  if(canvas.width!==W||canvas.height!==H){ canvas.width=W; canvas.height=H; }
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const pxDeg=W/90; // 90° visible
+
+  /* minor ticks every 5° */
+  for(let i=-90;i<=90;i+=5){
+    const actualDeg=((hdg+i)%360+360)%360;
+    const x=W/2+i*pxDeg;
+    const isMaj=actualDeg%45===0;
+    ctx.strokeStyle=isMaj?'#484e60':'#2c2f38';
+    ctx.lineWidth=isMaj?1.5:0.8;
+    ctx.beginPath(); ctx.moveTo(x,isMaj?2:8); ctx.lineTo(x,H-(isMaj?2:8)); ctx.stroke();
   }
 
-  // speed
-  if (c.speed != null && !isNaN(c.speed) && c.speed >= 0) {
-    S.speed = c.speed * KNOTS;
-  } else if (S.prevPos) {
-    const d = haversineM(S.prevPos.lat, S.prevPos.lon, c.latitude, c.longitude);
-    const dt = (now - S.prevPos.t) / 1000;
-    if (dt > 0.5 && dt < 60) S.speed = (d / dt) * KNOTS;
-  }
-
-  S.prevPos = { lat: c.latitude, lon: c.longitude, t: now };
-  S.lat = c.latitude;
-  S.lon = c.longitude;
-  S.alt = c.altitude;
-  S.acc = c.accuracy;
-
-  // GPS status
-  const dot = document.getElementById('gps-dot');
-  const txt = document.getElementById('gps-status-text');
-  if (c.accuracy < 20)      { dot.className = 'active';    txt.textContent = 'GPS FIX'; }
-  else if (c.accuracy < 60) { dot.className = 'active';    txt.textContent = 'GPS OK';  }
-  else                      { dot.className = 'searching'; txt.textContent = 'A FIXAR'; }
-
-  maybeRefreshWeather();
-  updateDisplay();
+  /* labels */
+  TICKS.forEach(([deg,label])=>{
+    [-360,0,360].forEach(offset=>{
+      const d=deg+offset, diff=d-hdg;
+      if(Math.abs(diff)>58) return;
+      const x=W/2+diff*pxDeg;
+      const isCard=['N','S','E','W'].includes(label);
+      ctx.fillStyle=isCard?'#f5a623':'#4a5060';
+      ctx.font=`${isCard?700:400} ${isCard?14:11}px 'Barlow Condensed', sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(label,x,H/2);
+    });
+  });
 }
 
-function onGpsError(err) {
-  const dot = document.getElementById('gps-dot');
-  dot.className = 'error';
-  setEl('gps-status-text', 'ERRO GPS');
+/* ═══════════════════════════════════════════
+   RENDER LOOP — runs every 500 ms regardless
+   of GPS events
+   ═══════════════════════════════════════════ */
+function renderLoop(){
+  const now=new Date();
+  setText('gps-time', hhmmss(now));
 
-  if (err.code === err.PERMISSION_DENIED) {
-    document.getElementById('no-gps').classList.add('show');
-  }
-}
-
-/* ───────── WAKELOCK ───────── */
-async function requestWakeLock() {
-  try {
-    if ('wakeLock' in navigator) {
-      const wl = await navigator.wakeLock.request('screen');
-      document.addEventListener('visibilitychange', async () => {
-        if (document.visibilityState === 'visible') {
-          await navigator.wakeLock.request('screen');
-        }
-      });
-    }
-  } catch(e) {}
-}
-
-/* ───────── START ───────── */
-function startApp() {
-  if (S.started) return;
-  S.started = true;
-
-  document.getElementById('splash').classList.add('hidden');
-
-  requestWakeLock();
-
-  if (!navigator.geolocation) {
-    document.getElementById('no-gps').classList.add('show');
-    return;
+  /* Rumo */
+  if(ST.heading!==null){
+    const h=Math.round(ST.heading);
+    setText('val-rumo',   String(h).padStart(3,'0'));
+    setText('val-cardinal', toCardinal(ST.heading));
+    drawCompass(ST.heading);
   }
 
-  navigator.geolocation.watchPosition(onPosition, onGpsError, {
+  /* Velocidade */
+  if(ST.speed!==null){
+    setText('val-speed', ST.speed.toFixed(1));
+  }
+
+  /* Ondas / Vento */
+  if(ST.waves!==null) setText('val-waves', ST.waves.toFixed(1));
+  if(ST.wind!==null)  setText('val-wind',  Math.round(ST.wind).toString());
+  if(ST.metaTime){
+    const t=hhmmss(ST.metaTime);
+    setText('met-waves','MET '+t);
+    setText('met-wind', 'MET '+t);
+  }
+
+  /* Coords */
+  if(ST.lat!==null && ST.lon!==null){
+    setText('gps-coords', `${toDMS(ST.lat,true)}  ·  ${toDMS(ST.lon,false)}`);
+  }
+  if(ST.acc!==null) setText('gps-acc', `ACC ${Math.round(ST.acc)}m`);
+  if(ST.alt!==null) setText('gps-alt', `ALT ${Math.round(ST.alt)}m`);
+}
+
+/* ─── Wake Lock ─── */
+async function keepScreenOn(){
+  try{ if('wakeLock' in navigator){
+    const wl=await navigator.wakeLock.request('screen');
+    document.addEventListener('visibilitychange',async()=>{
+      if(document.visibilityState==='visible') await navigator.wakeLock.request('screen');
+    });
+  }}catch(e){}
+}
+
+/* ─── Start ─── */
+let started=false;
+function startApp(){
+  if(started) return; started=true;
+  $('splash').classList.add('gone');
+  keepScreenOn();
+
+  if(!navigator.geolocation){
+    $('no-gps').classList.add('show'); return;
+  }
+
+  /* high-frequency watch */
+  ST.watchId=navigator.geolocation.watchPosition(onPosition, onGpsError,{
     enableHighAccuracy: true,
-    maximumAge: 1000,
-    timeout: 15000
+    maximumAge        : 500,   // accept positions up to 500ms old
+    timeout           : 10000
   });
 
-  // clock tick
-  setInterval(() => {
-    const now = new Date();
-    setEl('gps-time', fmtTime(now));
-  }, 1000);
+  /* INDEPENDENT render loop — every 500ms */
+  renderLoop();
+  setInterval(renderLoop, 500);
 }
 
-/* ───────── INIT ───────── */
-window.addEventListener('load', () => {
-  // Try auto-start if geolocation available
-  if (navigator.geolocation) {
-    setTimeout(startApp, 400);
-  }
+window.addEventListener('load',()=>{
+  /* resize compass */
+  window.addEventListener('resize',()=>{ if(ST.heading!==null) drawCompass(ST.heading); });
 
-  // Initial compass draw
-  drawCompass(0);
-  window.addEventListener('resize', () => drawCompass(S.heading || 0));
+  /* auto-start */
+  setTimeout(startApp, 300);
 });
 </script>
 </body>
