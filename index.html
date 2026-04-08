@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UltraDash Marine v13</title>
+    <title>UltraDash v14 - Precise</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dseg@2.1.0/css/dseg.min.css">
 
@@ -11,7 +11,7 @@
         :root { 
             --bg: #000000; 
             --on: #ffffff; 
-            --off: #121212; 
+            --off: #111111; 
             --glow: 0 0 20px rgba(255, 255, 255, 0.4);
         }
 
@@ -28,45 +28,49 @@
             display: flex; flex-direction: column;
         }
 
-        /* Botões Superiores */
+        /* Top Bar */
         #top-nav {
-            display: flex; justify-content: space-between; padding: 20px;
+            display: flex; justify-content: space-between; padding: 15px 20px;
             position: absolute; top: 0; width: 100%; box-sizing: border-box; z-index: 100;
         }
 
         .icon-btn {
             background: rgba(255,255,255,0.1); border: 1px solid #333;
-            color: var(--on); border-radius: 10px; width: 50px; height: 50px;
-            display: flex; align-items: center; justify-content: center; font-size: 24px;
+            color: var(--on); border-radius: 8px; width: 45px; height: 45px;
+            display: flex; align-items: center; justify-content: center; font-size: 22px;
         }
 
-        /* Contentor Principal */
+        /* Container que estica os componentes */
         #main-display {
             flex: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: space-between;
-            padding: 85px 0 30px 0; /* Espaço para nav e footer */
+            align-items: center; 
+            justify-content: space-between; /* Força Heading para cima e Speed para baixo */
+            padding-top: 75px; /* Evita sobrepor botões */
+            padding-bottom: 20px;
         }
 
         .label { 
-            font-size: 15px; letter-spacing: 5px; opacity: 0.9; 
-            font-weight: bold; text-transform: uppercase;
+            font-size: 14px; letter-spacing: 4px; opacity: 0.8; 
+            font-weight: 900; text-transform: uppercase;
         }
 
-        /* Estilo LCD Digital - SEM ITÁLICO */
-        .lcd-wrapper { 
-            position: relative; 
-            font-family: 'DSEG7-Classic', sans-serif; 
-            font-weight: 700;
+        /* FONT 7-SEGMENTOS: Reta e sem itálico */
+        .lcd-font { 
+            font-family: 'DSEG7-Classic', sans-serif !important; 
+            font-style: normal !important; /* RECTO */
+            font-weight: bold;
         }
+
+        .lcd-wrapper { position: relative; }
         .lcd-ghost { color: var(--off); position: absolute; top: 0; left: 0; z-index: 1; }
         .lcd-value { position: relative; text-shadow: var(--glow); z-index: 2; }
 
-        /* HEADING - Mais para cima */
-        #heading-section { display: flex; flex-direction: column; align-items: center; margin-top: 0; }
+        /* HEADING - Puxado ao topo */
+        #heading-section { display: flex; flex-direction: column; align-items: center; }
         #heading-box { font-size: 28vw; }
         .degree-symbol { 
             font-family: Arial, sans-serif; font-size: 10vw; 
-            position: absolute; right: -9vw; top: 1vw; 
+            position: absolute; right: -9vw; top: 0; 
         }
 
         .separator { 
@@ -74,22 +78,25 @@
             margin: 5px 0; 
         }
 
-        /* SPEED & KNOTS - Knots mais para baixo */
-        #speed-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        /* SPEED - Puxado ao centro/baixo */
+        #speed-section { display: flex; flex-direction: column; align-items: center; width: 100%; }
         #speed-box { font-size: 32vw; }
-        #knots-label { margin-top: 15vh; } /* Afastamento de 2cm (aprox 15% da altura do ecrã) */
 
-        /* Rodapé */
+        /* AFASTAMENTO KNOTS: 2cm reais (18vh) */
+        #knots-label { margin-top: 18vh; margin-bottom: 2vh; }
+
+        /* Footer Coordenadas */
         #footer {
-            padding: 20px 0; text-align: center; border-top: 1px solid #111;
-            font-family: monospace; width: 100%;
+            padding: 15px 0; text-align: center; border-top: 1px solid #151515;
+            font-family: 'Courier New', monospace; width: 100%; background: var(--bg);
         }
-        #coords { font-size: 14px; font-weight: bold; margin-bottom: 5px; }
+        #coords { font-size: 13px; font-weight: bold; margin-bottom: 3px; }
         #precision { font-size: 10px; opacity: 0.5; letter-spacing: 2px; }
 
+        /* Weather Screen */
         #weather-overlay {
             position: fixed; inset: 0; background: #000; z-index: 2000; display: none;
-            padding: 20px; flex-direction: column; overflow-y: auto;
+            padding: 20px; flex-direction: column; overflow-y: auto; font-family: sans-serif;
         }
         #weather-overlay.active { display: flex; }
     </style>
@@ -104,7 +111,7 @@
     <div id="main-display">
         <div id="heading-section">
             <div class="label">HEADING</div>
-            <div class="lcd-wrapper" id="heading-box">
+            <div class="lcd-wrapper lcd-font" id="heading-box">
                 <div class="lcd-ghost">888</div>
                 <div class="lcd-value"><span id="val-heading">000</span><span class="degree-symbol">°</span></div>
             </div>
@@ -113,7 +120,7 @@
         <div class="separator"></div>
 
         <div id="speed-section">
-            <div class="lcd-wrapper" id="speed-box">
+            <div class="lcd-wrapper lcd-font" id="speed-box">
                 <div class="lcd-ghost">88.8</div>
                 <div class="lcd-value" id="val-speed">00.0</div>
             </div>
@@ -123,11 +130,11 @@
 
     <div id="footer">
         <div id="coords">LAT: --.----° N | LON: --.----° W</div>
-        <div id="precision">PRECISÃO: --M | GPS OK</div>
+        <div id="precision">PRECISÃO: --M | GPS STATUS OK</div>
     </div>
 
     <div id="weather-overlay">
-        <button style="padding:15px; background:white; border:none; margin-bottom:20px;" onclick="document.getElementById('weather-overlay').classList.remove('active')">VOLTAR</button>
+        <button style="padding:15px; background:white; font-weight:bold; border:none; margin-bottom:20px;" onclick="document.getElementById('weather-overlay').classList.remove('active')">FECHAR</button>
         <div id="meteo-body"></div>
     </div>
 
@@ -153,7 +160,7 @@
                 }
 
                 elCoords.innerText = `LAT: ${Math.abs(latitude).toFixed(4)}° ${latitude >= 0 ? 'N' : 'S'} | LON: ${Math.abs(longitude).toFixed(4)}° ${longitude >= 0 ? 'E' : 'W'}`;
-                elPrec.innerText = `PRECISÃO: ${Math.round(accuracy)}M | GPS STATUS OK`;
+                elPrec.innerText = `PRECISÃO: ${Math.round(accuracy)}M | GPS OK`;
             }, null, { enableHighAccuracy: true });
         }
 
@@ -169,13 +176,13 @@
             body.innerHTML = "<p style='text-align:center'>A carregar...</p>";
             const url = `https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=auto`;
             fetch(url).then(r => r.json()).then(data => {
-                let html = "<table style='width:100%; border-collapse:collapse'><tr><th>H</th><th>Kn</th><th>Dir</th></tr>";
+                let html = "<table style='width:100%; color:white; border-collapse:collapse'><tr><th>H</th><th>Kn</th><th>Dir</th></tr>";
                 for (let i = new Date().getHours(); i < new Date().getHours() + 12; i++) {
                     if (!data.hourly) break;
-                    html += `<tr style='border-bottom:1px solid #222'><td style='padding:10px'>${data.hourly.time[i].split('T')[1]}</td><td>${data.hourly.wind_speed_10m[i].toFixed(1)}</td><td>${data.hourly.wind_direction_10m[i]}°</td></tr>`;
+                    html += `<tr style='border-bottom:1px solid #222'><td style='padding:12px'>${data.hourly.time[i].split('T')[1]}</td><td>${data.hourly.wind_speed_10m[i].toFixed(1)}</td><td>${data.hourly.wind_direction_10m[i]}°</td></tr>`;
                 }
                 body.innerHTML = html + "</table>";
-            }).catch(() => body.innerHTML = "Erro.");
+            }).catch(() => body.innerHTML = "Erro de rede.");
         }
 
         document.getElementById('openWeather').onclick = () => {
