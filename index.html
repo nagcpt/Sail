@@ -12,7 +12,7 @@
         :root {
             --bg: #000000;
             --text: #ffffff;
-            --accent: #444444;
+            --accent: #333333;
             --bordeaux: #800020;
         }
 
@@ -34,54 +34,62 @@
             justify-content: center;
             height: 100vh;
             overflow: hidden;
-            transition: background-color 0.8s ease, color 0.8s ease;
+            transition: background-color 0.6s ease, color 0.6s ease;
         }
 
-        /* Contentores */
         #dash-container {
             text-align: center;
+            width: 100%;
             user-select: none;
         }
 
-        #speed {
-            font-size: 40vw;
+        /* Rumo e Velocidade com a mesma fonte massiva */
+        .big-font {
+            font-size: 38vw; 
             font-weight: 900;
-            line-height: 0.8;
-            transition: all 0.4s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            line-height: 0.9;
             font-variant-numeric: tabular-nums;
-        }
-
-        #unit {
-            font-size: 7vw;
-            font-weight: 300;
-            color: var(--accent);
-            margin-bottom: 2vh;
+            transition: all 0.4s ease;
         }
 
         #bearing {
-            font-size: 18vw;
-            font-weight: 400;
-            opacity: 0.9;
+            margin-bottom: 2vh;
         }
 
-        /* Botão de Modo Noite */
+        /* Separador Horizontal */
+        .separator {
+            width: 60%;
+            height: 4px;
+            background-color: var(--accent);
+            margin: 2vh auto;
+            border-radius: 2px;
+            transition: background-color 0.6s ease;
+        }
+
+        #unit {
+            font-size: 8vw;
+            font-weight: 300;
+            color: var(--accent);
+            letter-spacing: 0.5vw;
+        }
+
         #toggleMode {
             position: absolute;
-            top: 30px;
-            right: 30px;
-            background: rgba(255, 255, 255, 0.05);
+            top: 25px;
+            right: 25px;
+            background: rgba(255, 255, 255, 0.03);
             color: var(--text);
             border: 1px solid var(--accent);
             padding: 15px;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 55px;
+            height: 55px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            backdrop-filter: blur(5px);
+            font-size: 24px;
+            z-index: 100;
         }
 
         #status-bar {
@@ -96,15 +104,18 @@
 </head>
 <body>
 
-    <button id="toggleMode" title="Alternar Modo Noturno">🌓</button>
+    <button id="toggleMode">🌓</button>
 
     <div id="dash-container">
-        <div id="speed">0</div>
+        <div id="bearing" class="big-font">--</div>
+        
+        <div class="separator"></div>
+        
+        <div id="speed" class="big-font">0</div>
         <div id="unit">KM/H</div>
-        <div id="bearing">--</div>
     </div>
 
-    <div id="status-bar">A sintonizar GPS...</div>
+    <div id="status-bar">GPS INITIALIZING...</div>
 
     <script>
         const speedEl = document.getElementById('speed');
@@ -114,73 +125,64 @@
 
         let lastSpeed = -1;
 
-        // Alternar Modo Noturno
         btnMode.addEventListener('click', () => {
             document.body.classList.toggle('night-mode');
             btnMode.innerText = document.body.classList.contains('night-mode') ? '☀️' : '🌓';
-            if (navigator.vibrate) navigator.vibrate(20);
+            if (navigator.vibrate) navigator.vibrate(25);
         });
 
-        // Função de conversão de rumo
         function getCardinals(deg) {
             if (deg === null || deg === undefined) return "--";
+            // Direções em Português
             const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
             return directions[Math.round(deg / 45) % 8];
         }
 
-        // Sucesso do GPS
         function onLocationUpdate(pos) {
             const { speed, heading, accuracy } = pos.coords;
             
-            // Conversão m/s -> km/h com filtro de ruído (abaixo de 1.8km/h conta como parado)
-            let kmh = (speed && speed > 0.5) ? Math.round(speed * 3.6) : 0;
+            // Lógica de velocidade: m/s para km/h
+            let kmh = (speed && speed > 0.4) ? Math.round(speed * 3.6) : 0;
             
             if (kmh !== lastSpeed) {
                 speedEl.innerText = kmh;
                 lastSpeed = kmh;
             }
 
-            if (heading !== null) {
+            // Atualização de Rumo (Heading)
+            if (heading !== null && heading !== undefined) {
                 bearingEl.innerText = getCardinals(heading);
+            } else if (kmh === 0) {
+                // Se parado, o GPS raramente dá heading fiável
+                bearingEl.style.opacity = "0.3";
+            } else {
+                bearingEl.style.opacity = "1";
             }
 
-            statusEl.innerText = `Precisão: ${Math.round(accuracy)}m | GPS Ativo`;
+            statusEl.innerText = `ACCURACY: ${Math.round(accuracy)}M | GPS ACTIVE`;
         }
 
-        function onLocationError(err) {
-            statusEl.innerText = `Erro: ${err.message}`;
-            statusEl.style.color = "red";
-        }
-
-        // Ativar GPS de alta performance
         if ("geolocation" in navigator) {
-            navigator.geolocation.watchPosition(onLocationUpdate, onLocationError, {
+            navigator.geolocation.watchPosition(onLocationUpdate, (err) => {
+                statusEl.innerText = "GPS ERROR: " + err.message;
+            }, {
                 enableHighAccuracy: true,
                 maximumAge: 0,
-                timeout: 5000
+                timeout: 10000
             });
-        } else {
-            statusEl.innerText = "GPS Indisponível";
         }
 
-        // Wake Lock (Ecrã sempre ligado)
+        // Wake Lock
         let wakeLock = null;
         async function initWakeLock() {
             try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                }
-            } catch (e) {
-                console.log("WakeLock não suportado ou bloqueado.");
-            }
+                if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+            } catch (e) {}
         }
-
         document.addEventListener('visibilitychange', () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') initWakeLock();
+            if (document.visibilityState === 'visible') initWakeLock();
         });
-
         initWakeLock();
-
     </script>
 </body>
 </html>
