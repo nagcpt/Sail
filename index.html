@@ -3,80 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
-    <title>UltraDash</title>
+    <title>UltraDash Pro</title>
+    
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlVsdHJhRGFzaCBQcm8iLAogICJzaG9ydF9uYW1lIjogIlVsdHJhRGFzaCIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMDAwMDAwIiwKICAidGhlbWVfY29sb3ciOiAiIzAwMDAwMCIKfQ==">
+
     <style>
-        body {
-            margin: 0; background: #000; color: #fff;
-            font-family: 'Inter', sans-serif;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            height: 100vh; overflow: hidden;
+        :root {
+            --bg: #000000;
+            --text: #ffffff;
+            --accent: #444444;
+            --bordeaux: #800020;
         }
 
-        /* O segredo da fluidez: transição suave e números tabulares (largura fixa) */
+        body.night-mode {
+            --bg: #050000;
+            --text: var(--bordeaux);
+            --accent: #3d000e;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.8s ease, color 0.8s ease;
+        }
+
+        /* Contentores */
+        #dash-container {
+            text-align: center;
+            user-select: none;
+        }
+
         #speed {
-            font-size: 38vw; font-weight: 900;
+            font-size: 40vw;
+            font-weight: 900;
+            line-height: 0.8;
             transition: all 0.4s cubic-bezier(0.17, 0.67, 0.83, 0.67);
             font-variant-numeric: tabular-nums;
         }
 
-        #unit { font-size: 6vw; color: #666; margin-top: -5vh; }
-        #bearing { font-size: 15vw; margin-top: 20px; font-weight: 300; }
-        
+        #unit {
+            font-size: 7vw;
+            font-weight: 300;
+            color: var(--accent);
+            margin-bottom: 2vh;
+        }
+
+        #bearing {
+            font-size: 18vw;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+
+        /* Botão de Modo Noite */
+        #toggleMode {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            border: 1px solid var(--accent);
+            padding: 15px;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            backdrop-filter: blur(5px);
+        }
+
         #status-bar {
-            position: absolute; bottom: 20px;
-            font-size: 12px; color: #333;
-            text-transform: uppercase; letter-spacing: 1px;
+            position: absolute;
+            bottom: 20px;
+            font-size: 10px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
     </style>
 </head>
 <body>
 
-    <div id="speed">0</div>
-    <div id="unit">KM/H</div>
-    <div id="bearing">--</div>
-    <div id="status-bar">GPS OFFLINE</div>
+    <button id="toggleMode" title="Alternar Modo Noturno">🌓</button>
+
+    <div id="dash-container">
+        <div id="speed">0</div>
+        <div id="unit">KM/H</div>
+        <div id="bearing">--</div>
+    </div>
+
+    <div id="status-bar">A sintonizar GPS...</div>
 
     <script>
-        let lastSpeed = 0;
+        const speedEl = document.getElementById('speed');
+        const bearingEl = document.getElementById('bearing');
+        const statusEl = document.getElementById('status-bar');
+        const btnMode = document.getElementById('toggleMode');
 
-        function updateUI(pos) {
+        let lastSpeed = -1;
+
+        // Alternar Modo Noturno
+        btnMode.addEventListener('click', () => {
+            document.body.classList.toggle('night-mode');
+            btnMode.innerText = document.body.classList.contains('night-mode') ? '☀️' : '🌓';
+            if (navigator.vibrate) navigator.vibrate(20);
+        });
+
+        // Função de conversão de rumo
+        function getCardinals(deg) {
+            if (deg === null || deg === undefined) return "--";
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+            return directions[Math.round(deg / 45) % 8];
+        }
+
+        // Sucesso do GPS
+        function onLocationUpdate(pos) {
             const { speed, heading, accuracy } = pos.coords;
             
-            // Filtro de ruído: m/s para km/h + ignorar drifts abaixo de 0.5m/s
-            let currentSpeed = (speed && speed > 0.5) ? Math.round(speed * 3.6) : 0;
+            // Conversão m/s -> km/h com filtro de ruído (abaixo de 1.8km/h conta como parado)
+            let kmh = (speed && speed > 0.5) ? Math.round(speed * 3.6) : 0;
             
-            // Só atualiza o DOM se o valor mudar (otimização de renderização)
-            if (currentSpeed !== lastSpeed) {
-                document.getElementById('speed').innerText = currentSpeed;
-                lastSpeed = currentSpeed;
+            if (kmh !== lastSpeed) {
+                speedEl.innerText = kmh;
+                lastSpeed = kmh;
             }
 
             if (heading !== null) {
-                const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-                document.getElementById('bearing').innerText = dirs[Math.round(heading / 45) % 8];
+                bearingEl.innerText = getCardinals(heading);
             }
 
-            document.getElementById('status-bar').innerText = `Precisão: ${Math.round(accuracy)}m`;
+            statusEl.innerText = `Precisão: ${Math.round(accuracy)}m | GPS Ativo`;
         }
 
-        navigator.geolocation.watchPosition(updateUI, (err) => console.error(err), {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 2000
+        function onLocationError(err) {
+            statusEl.innerText = `Erro: ${err.message}`;
+            statusEl.style.color = "red";
+        }
+
+        // Ativar GPS de alta performance
+        if ("geolocation" in navigator) {
+            navigator.geolocation.watchPosition(onLocationUpdate, onLocationError, {
+                enableHighAccuracy: true,
+                maximumAge: 0,
+                timeout: 5000
+            });
+        } else {
+            statusEl.innerText = "GPS Indisponível";
+        }
+
+        // Wake Lock (Ecrã sempre ligado)
+        let wakeLock = null;
+        async function initWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (e) {
+                console.log("WakeLock não suportado ou bloqueado.");
+            }
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') initWakeLock();
         });
 
-        // Wake Lock para manter o ecrã ligado
-        if ('wakeLock' in navigator) {
-            let lock = null;
-            const requestLock = async () => {
-                try { lock = await navigator.wakeLock.request('screen'); } catch (e) {}
-            };
-            requestLock();
-            document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') requestLock(); });
-        }
+        initWakeLock();
+
     </script>
 </body>
 </html>
