@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#000000">
-    <title>UltraDash Marine v5</title>
+    <title>UltraDash Marine v5.1</title>
     <style>
         :root { --bg: #000000; --text: #ffffff; --accent: #333333; --bordeaux: #800020; }
         body.night-mode { --bg: #050000; --text: var(--bordeaux); --accent: #2a000a; }
@@ -16,11 +16,9 @@
         }
 
         #dash-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
-        
         .big-font { font-weight: 900; line-height: 0.85; font-variant-numeric: tabular-nums; }
         #bearing { font-size: 32vw; }
         #speed { font-size: 38vw; }
-        
         .separator { width: 70%; height: 4px; background-color: var(--accent); margin: 2vh auto; border-radius: 10px; }
         #unit { font-size: 7vw; color: var(--accent); letter-spacing: 2vw; font-weight: bold; }
 
@@ -40,7 +38,7 @@
         #weather-screen.active { display: flex; }
         .close-btn { padding: 15px; background: var(--bordeaux); color: white; border: none; border-radius: 8px; font-weight: bold; margin-bottom: 15px; width: 100%; }
 
-        #location-tag { font-size: 0.9rem; color: #aaa; margin-bottom: 15px; text-align: center; font-style: italic; }
+        #location-tag { font-size: 0.85rem; color: #888; margin-bottom: 15px; text-align: center; }
 
         table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
         th, td { padding: 10px 2px; text-align: center; border-bottom: 1px solid #222; }
@@ -69,17 +67,17 @@
     </div>
 
     <div id="weather-screen">
-        <button class="close-btn" id="closeWeather">VOLTAR AO DASH</button>
-        <h2 style="text-align:center; color:var(--bordeaux); margin-bottom: 5px;">PREVISÃO 12H</h2>
-        <div id="location-tag">A localizar...</div>
+        <button class="close-btn" id="closeWeather">VOLTAR</button>
+        <h2 style="text-align:center; color:var(--bordeaux); margin:0;">METEO 12H</h2>
+        <div id="location-tag">---</div>
         <table>
             <thead>
                 <tr>
-                    <th>Hora</th>
-                    <th>Vento (kn)</th>
-                    <th>Dir.</th>
-                    <th>Onda (m)</th>
-                    <th>Dir.</th>
+                    <th>H</th>
+                    <th>Vento</th>
+                    <th>Dir</th>
+                    <th>Onda</th>
+                    <th>Dir</th>
                 </tr>
             </thead>
             <tbody id="forecast-table"></tbody>
@@ -101,60 +99,53 @@
             document.body.classList.toggle('night-mode');
         };
 
-        // Meteorologia com Geocoding reverso
         async function fetchWeather() {
-            forecastTable.innerHTML = '<tr><td colspan="5">A ler sensores marítimos...</td></tr>';
-            locationTag.innerText = "A identificar localização...";
+            forecastTable.innerHTML = '<tr><td colspan="5">A carregar...</td></tr>';
+            locationTag.innerText = `Coordenadas: ${state.lat.toFixed(3)}, ${state.lon.toFixed(3)}`;
             
             try {
-                const geoUrl = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${state.lat}&longitude=${state.lon}&count=1`;
-                const landUrl = `https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=auto`;
-                const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${state.lat}&longitude=${state.lon}&hourly=wave_height,wave_direction&timezone=auto`;
+                // Chamadas de API em paralelo
+                const urls = [
+                    `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${state.lat}&longitude=${state.lon}&count=1`,
+                    `https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=auto`,
+                    `https://marine-api.open-meteo.com/v1/marine?latitude=${state.lat}&longitude=${state.lon}&hourly=wave_height,wave_direction&timezone=auto`
+                ];
 
-                const [resGeo, resLand, resMarine] = await Promise.all([
-                    fetch(geoUrl), fetch(landUrl), fetch(marineUrl)
-                ]);
+                const responses = await Promise.all(urls.map(url => fetch(url).catch(e => null)));
+                const [geo, land, marine] = await Promise.all(responses.map(r => r ? r.json() : null));
 
-                const geoData = await resGeo.json();
-                const landData = await resLand.json();
-                const marineData = await resMarine.json();
-
-                // Identificar local
-                if (geoData.results && geoData.results[0]) {
-                    const loc = geoData.results[0];
-                    locationTag.innerText = `${loc.name || ''}, ${loc.admin1 || ''} (${loc.country || ''})`;
-                } else {
-                    locationTag.innerText = "Posição: Mar Aberto / Coordenadas Atuais";
+                // Tentar nome da localidade
+                if (geo?.results?.[0]) {
+                    const loc = geo.results[0];
+                    locationTag.innerText = `${loc.name || ''} ${loc.country || ''}`;
                 }
 
                 let html = '';
                 const now = new Date().getHours();
 
                 for (let i = now; i < now + 12; i++) {
-                    if (!landData?.hourly?.time[i]) break;
-                    
-                    const time = landData.hourly.time[i].split('T')[1] || '--';
-                    const wind = landData.hourly.wind_speed_10m[i] || 0;
-                    const windDir = landData.hourly.wind_direction_10m[i] || 0;
-                    const wave = marineData?.hourly?.wave_height ? marineData.hourly.wave_height[i] : null;
-                    const waveDir = marineData?.hourly?.wave_direction ? marineData.hourly.wave_direction[i] : null;
+                    const time = land?.hourly?.time?.[i]?.split('T')[1] || '--';
+                    const wind = land?.hourly?.wind_speed_10m?.[i]?.toFixed(1) || '--';
+                    const windDir = land?.hourly?.wind_direction_10m?.[i] || '--';
+                    const wave = marine?.hourly?.wave_height?.[i]?.toFixed(1) || '--';
+                    const waveDir = marine?.hourly?.wave_direction?.[i] || '--';
 
                     html += `<tr>
                         <td>${time}</td>
-                        <td style="font-weight:bold; color:var(--text)">${wind.toFixed(1)}</td>
+                        <td style="font-weight:bold">${wind} kn</td>
                         <td>${windDir}°</td>
-                        <td>${wave ? wave.toFixed(1) : '--'}</td>
-                        <td>${waveDir ? waveDir+'°' : '--'}</td>
+                        <td>${wave}m</td>
+                        <td>${waveDir}°</td>
                     </tr>`;
                 }
-                forecastTable.innerHTML = html;
+                forecastTable.innerHTML = html || '<tr><td colspan="5">Sem dados para as próximas horas.</td></tr>';
             } catch (err) {
-                forecastTable.innerHTML = `<tr><td colspan="5" style="color:red">Erro na rede ou local remoto.</td></tr>`;
+                forecastTable.innerHTML = '<tr><td colspan="5">Erro de ligação à rede.</td></tr>';
             }
         }
 
         document.getElementById('openWeather').onclick = () => {
-            if (!state.lat) return alert("Aguarde por sinal GPS...");
+            if (!state.lat) return alert("Sinal GPS insuficiente.");
             weatherScreen.classList.add('active');
             fetchWeather();
         };
@@ -163,30 +154,25 @@
             weatherScreen.classList.remove('active');
         };
 
-        // GPS em Knots
         if ("geolocation" in navigator) {
             navigator.geolocation.watchPosition((pos) => {
                 state.lat = pos.coords.latitude;
                 state.lon = pos.coords.longitude;
                 state.speed = pos.coords.speed || 0;
 
-                // m/s to Knots: 1.94384
                 let knots = state.speed * 1.94384;
-                speedEl.innerText = knots > 0.2 ? knots.toFixed(1) : "0.0";
+                speedEl.innerText = knots > 0.1 ? knots.toFixed(1) : "0.0";
                 
-                if (pos.coords.heading !== null && state.speed > 0.5) {
+                if (pos.coords.heading !== null && state.speed > 0.4) {
                     bearingEl.innerText = Math.round(pos.coords.heading) + "°";
                     bearingEl.style.opacity = "1";
                 }
 
                 coordsEl.innerText = `${state.lat.toFixed(5)}, ${state.lon.toFixed(5)}`;
                 infoEl.innerText = `Precisão: ${Math.round(pos.coords.accuracy)}m`;
-            }, (err) => {
-                infoEl.innerText = "Erro GPS: " + err.message;
-            }, { enableHighAccuracy: true });
+            }, null, { enableHighAccuracy: true });
         }
 
-        // Bússola magnética (parado)
         window.addEventListener('deviceorientationabsolute', (e) => {
             if (state.speed < 1 && e.alpha !== null) {
                 bearingEl.innerText = Math.round(360 - e.alpha) + "°";
@@ -194,12 +180,10 @@
             }
         }, true);
 
-        // Manter ecrã ativo
         async function wake() {
             try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch(e) {}
         }
         wake();
-        document.addEventListener('visibilitychange', () => { if(document.visibilityState==='visible') wake(); });
     </script>
 </body>
 </html>
