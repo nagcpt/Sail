@@ -3,84 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#000000">
-    <title>UltraDash Marine v9</title>
+    <title>UltraDash Marine v10</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.cdnfonts.com/css/digital-7-mono" rel="stylesheet">
 
     <style>
         :root { 
             --bg: #000000; 
-            --text-color: #ffffff; 
+            --led-on: #ffffff; 
+            --led-off: #111111; /* Cor dos segmentos desligados */
             --glow: rgba(255, 255, 255, 0.4);
-            --accent: #333333; 
             --bordeaux: #800020; 
         }
 
         body.night-mode { 
-            --bg: #050000; 
-            --text-color: #800020; 
+            --led-on: #800020; 
+            --led-off: #1a0004;
             --glow: rgba(128, 0, 32, 0.5);
-            --accent: #2a000a; 
         }
 
         body {
-            margin: 0; padding: 0; background-color: var(--bg); color: var(--text-color);
-            font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden;
-            transition: all 0.3s ease;
+            margin: 0; padding: 0; background-color: var(--bg); color: var(--led-on);
+            font-family: sans-serif; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
 
-        #dash-screen { display: flex; flex-direction: column; align-items: center; justify-content: space-between; height: 100vh; padding: 40px 0; box-sizing: border-box; }
+        /* Contentores principais */
+        #dash { width: 100%; display: flex; flex-direction: column; align-items: center; }
 
-        /* Labels secundários */
-        .label { font-size: 4vw; color: var(--text-color); opacity: 0.6; letter-spacing: 1vw; text-transform: uppercase; }
+        /* Estilo comum para as secções de display */
+        .display-container { position: relative; display: flex; flex-direction: column; align-items: center; }
 
-        /* Valores Digitais (Heading e Speed iguais) */
-        .digital-val { 
-            font-size: 36vw; 
-            font-weight: normal; 
-            line-height: 0.8; 
-            text-shadow: 0 0 20px var(--glow);
-            letter-spacing: -2vw;
-            margin: 2vh 0;
+        .label { 
+            font-size: 18px; letter-spacing: 4px; opacity: 0.8; 
+            font-weight: bold; margin-bottom: 5px; text-transform: uppercase;
         }
 
-        #bearing-unit { font-size: 15vw; vertical-align: top; margin-left: -5vw; }
+        /* O truque dos 7 segmentos */
+        .digital-wrapper { position: relative; font-family: 'Digital-7 Mono', sans-serif; }
+
+        /* Segmentos de fundo (oitos fixos) */
+        .ghost { color: var(--led-off); position: absolute; top: 0; left: 0; z-index: 1; }
+
+        /* Valor real por cima */
+        .value { 
+            position: relative; z-index: 2; 
+            text-shadow: 0 0 15px var(--glow);
+            color: var(--led-on);
+        }
+
+        /* Tamanhos específicos */
+        #bearing-display { font-size: 38vw; }
+        #speed-display { font-size: 38vw; }
+        .degree-symbol { font-size: 15vw; position: absolute; right: -12vw; top: 0; }
 
         .separator { 
-            width: 90%; height: 1.5px; 
-            background-color: var(--text-color); 
-            opacity: 0.3;
-            margin: 2vh 0; 
+            width: 85%; height: 2px; background: var(--led-on); opacity: 0.3;
+            margin: 4vh 0; 
         }
 
-        /* Afastamento da Velocidade */
-        #speed-section { margin-top: 5vh; display: flex; flex-direction: column; align-items: center; }
-
-        /* Botões no topo (Estilo App Nativa) */
+        /* Botões laterais */
         .fab {
-            position: absolute; width: 50px; height: 50px; border-radius: 12px;
-            background: rgba(255, 255, 255, 0.05); color: var(--text-color); border: 1px solid var(--accent);
-            display: flex; align-items: center; justify-content: center; z-index: 1000; font-size: 20px;
+            position: absolute; width: 45px; height: 45px; border-radius: 8px;
+            background: #111; border: 1px solid #333; color: white;
+            display: flex; align-items: center; justify-content: center; z-index: 1000;
         }
         #openWeather { top: 20px; left: 20px; }
         #toggleMode { top: 20px; right: 20px; }
 
-        /* Rodapé Informativo */
-        #status-bar { width: 100%; text-align: center; }
-        #coords { font-size: 3.2vw; letter-spacing: 1px; margin-bottom: 8px; font-weight: bold; }
-        #info { font-size: 2.8vw; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; }
+        /* Rodapé Coordenadas */
+        #footer { position: absolute; bottom: 20px; text-align: center; width: 100%; font-family: monospace; }
+        #coords { font-size: 14px; letter-spacing: 1px; margin-bottom: 5px; font-weight: bold; }
+        #info { font-size: 11px; opacity: 0.5; text-transform: uppercase; letter-spacing: 2px; }
 
-        /* Overlay Meteorologia */
+        /* Overlay Weather */
         #weather-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 2000; display: none; flex-direction: column;
-            padding: 20px; box-sizing: border-box; font-family: sans-serif;
+            position: fixed; inset: 0; background: #000; z-index: 2000; display: none;
+            padding: 20px; flex-direction: column; overflow-y: auto;
         }
         #weather-screen.active { display: flex; }
-        .close-btn { padding: 15px; background: var(--bordeaux); color: white; border: none; border-radius: 8px; font-weight: bold; margin-bottom: 15px; width: 100%; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; color: white; }
-        th, td { padding: 10px 2px; text-align: center; border-bottom: 1px solid #222; }
+        .close-btn { padding: 15px; background: var(--bordeaux); color: white; border: none; border-radius: 8px; font-weight: bold; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 10px 5px; border-bottom: 1px solid #222; text-align: center; }
     </style>
 </head>
 <body>
@@ -88,87 +92,49 @@
     <button id="openWeather" class="fab">⚓</button>
     <button id="toggleMode" class="fab">🌓</button>
 
-    <div id="dash-screen">
-        <div id="bearing-section">
-            <div class="label">HEADING</div>
-            <div class="digital-val"><span id="bearing">000</span><span id="bearing-unit">°</span></div>
+    <div id="dash">
+        <div class="display-container">
+            <span class="label">HEADING</span>
+            <div class="digital-wrapper">
+                <div class="ghost" id="bearing-display">888</div>
+                <div class="value" id="bearing-display"><span id="bearing">000</span><span class="degree-symbol">°</span></div>
+            </div>
         </div>
 
         <div class="separator"></div>
 
-        <div id="speed-section">
-            <div class="digital-val" id="speed">0.0</div>
-            <div class="label">KNOTS</div>
+        <div class="display-container" style="margin-top: 2vh;">
+            <div class="digital-wrapper">
+                <div class="ghost" id="speed-display">88.8</div>
+                <div class="value" id="speed-display"><span id="speed">00.0</span></div>
+            </div>
+            <span class="label" style="margin-top: 10px;">KNOTS</span>
         </div>
+    </div>
 
-        <div id="status-bar">
-            <div id="coords">LAT: --.---- | LON: --.----</div>
-            <div id="info">GPS: A LOCALIZAR...</div>
-        </div>
+    <div id="footer">
+        <div id="coords">LAT: --.---- N | LON: --.---- W</div>
+        <div id="info">PRECISÃO: --M | GPS STATUS OK</div>
     </div>
 
     <div id="weather-screen">
         <button class="close-btn" id="closeWeather">VOLTAR</button>
-        <h2 style="text-align:center; margin:0 0 10px 0;">FORECAST 12H</h2>
-        <div id="loc-tag" style="text-align:center; color:#666; font-size:0.8rem; margin-bottom:15px;"></div>
+        <h3 id="loc-tag" style="text-align:center; color:white; font-size:12px;"></h3>
         <table>
-            <thead><tr><th>H</th><th>Vento</th><th>Dir</th><th>Onda</th><th>Dir</th></tr></thead>
+            <thead><tr><th>H</th><th>Kn</th><th>Dir</th><th>m</th><th>Dir</th></tr></thead>
             <tbody id="forecast-table"></tbody>
         </table>
     </div>
 
     <script>
         const state = { lat: null, lon: null, speed: 0 };
-        const els = {
-            speed: document.getElementById('speed'),
-            bearing: document.getElementById('bearing'),
-            coords: document.getElementById('coords'),
-            info: document.getElementById('info'),
-            weather: document.getElementById('weather-screen'),
-            table: document.getElementById('forecast-table'),
-            loc: document.getElementById('loc-tag')
-        };
+        const speedEl = document.getElementById('speed');
+        const bearingEl = document.getElementById('bearing');
+        const coordsEl = document.getElementById('coords');
+        const infoEl = document.getElementById('info');
+        const weatherScreen = document.getElementById('weather-screen');
 
-        // Alternar modo Noturno
         document.getElementById('toggleMode').onclick = () => document.body.classList.toggle('night-mode');
-
-        // Lógica Meteorológica
-        async function fetchMeteo() {
-            els.table.innerHTML = '<tr><td colspan="5">A carregar...</td></tr>';
-            try {
-                // Nome do local
-                fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${state.lat}&longitude=${state.lon}&count=1`)
-                    .then(r => r.json()).then(d => { els.loc.innerText = d?.results?.[0] ? `${d.results[0].name} (${d.results[0].country})` : 'Mar Aberto'; });
-
-                const landUrl = `https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=auto`;
-                const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${state.lat}&longitude=${state.lon}&hourly=wave_height,wave_direction&timezone=auto`;
-
-                const [resLand, resMarine] = await Promise.allSettled([fetch(landUrl), fetch(marineUrl)]);
-                const landData = resLand.status === 'fulfilled' ? await resLand.value.json() : null;
-                const marineData = resMarine.status === 'fulfilled' ? await resMarine.value.json() : null;
-
-                let html = '';
-                const now = new Date().getHours();
-                for (let i = now; i < now + 12; i++) {
-                    if (!landData?.hourly?.time[i]) break;
-                    html += `<tr>
-                        <td>${landData.hourly.time[i].split('T')[1]}</td>
-                        <td style="font-weight:bold">${landData.hourly.wind_speed_10m[i].toFixed(1)}</td>
-                        <td>${landData.hourly.wind_direction_10m[i]}°</td>
-                        <td>${marineData?.hourly?.wave_height ? marineData.hourly.wave_height[i].toFixed(1) : '--'}</td>
-                        <td>${marineData?.hourly?.wave_direction ? marineData.hourly.wave_direction[i] + '°' : '--'}</td>
-                    </tr>`;
-                }
-                els.table.innerHTML = html;
-            } catch (e) { els.table.innerHTML = '<tr><td colspan="5">Erro de rede.</td></tr>'; }
-        }
-
-        document.getElementById('openWeather').onclick = () => {
-            if (!state.lat) return alert("Aguarde por sinal GPS.");
-            els.weather.classList.add('active');
-            fetchMeteo();
-        };
-        document.getElementById('closeWeather').onclick = () => els.weather.classList.remove('active');
 
         // GPS e Bússola
         if ("geolocation" in navigator) {
@@ -177,31 +143,66 @@
                 state.lon = pos.coords.longitude;
                 state.speed = pos.coords.speed || 0;
 
+                // Velocidade em Knots (00.0 format)
                 let kn = state.speed * 1.94384;
-                els.speed.innerText = kn > 0.1 ? kn.toFixed(1) : "0.0";
+                let formattedSpeed = (kn > 0.1 ? kn.toFixed(1) : "00.0").padStart(4, '0');
+                speedEl.innerText = formattedSpeed;
 
-                if (pos.coords.heading !== null && state.speed > 0.4) {
-                    els.bearing.innerText = Math.round(pos.coords.heading).toString().padStart(3, '0');
-                    els.bearing.style.opacity = "1";
+                // Heading (000 format)
+                if (pos.coords.heading !== null && state.speed > 0.5) {
+                    bearingEl.innerText = Math.round(pos.coords.heading).toString().padStart(3, '0');
                 }
 
-                els.coords.innerText = `LAT: ${state.lat.toFixed(5)} | LON: ${state.lon.toFixed(5)}`;
-                els.info.innerText = `PRECISÃO: ${Math.round(pos.coords.accuracy)}M | GPS OK`;
+                coordsEl.innerText = `LAT: ${Math.abs(state.lat).toFixed(4)}° ${state.lat >= 0 ? 'N' : 'S'} | LON: ${Math.abs(state.lon).toFixed(4)}° ${state.lon >= 0 ? 'E' : 'W'}`;
+                infoEl.innerText = `PRECISÃO: ${Math.round(pos.coords.accuracy)}M | GPS OK`;
             }, null, { enableHighAccuracy: true });
         }
 
         window.addEventListener('deviceorientationabsolute', (e) => {
-            if (state.speed < 0.5 && e.alpha !== null) {
+            if (state.speed < 1 && e.alpha !== null) {
                 let h = Math.round(360 - e.alpha);
-                els.bearing.innerText = h.toString().padStart(3, '0');
-                els.bearing.style.opacity = "0.5";
+                bearingEl.innerText = h.toString().padStart(3, '0');
             }
         }, true);
+
+        // Weather Logic
+        document.getElementById('openWeather').onclick = () => {
+            if (!state.lat) return alert("Aguarde sinal GPS.");
+            weatherScreen.classList.add('active');
+            fetchWeather();
+        };
+        document.getElementById('closeWeather').onclick = () => weatherScreen.classList.remove('active');
+
+        async function fetchWeather() {
+            const table = document.getElementById('forecast-table');
+            table.innerHTML = '<tr><td colspan="5">A carregar...</td></tr>';
+            try {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=auto`;
+                const marUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${state.lat}&longitude=${state.lon}&hourly=wave_height,wave_direction&timezone=auto`;
+                
+                const [resL, resM] = await Promise.allSettled([fetch(url), fetch(marUrl)]);
+                const dL = await resL.value.json();
+                const dM = resM.status === 'fulfilled' ? await resM.value.json() : null;
+
+                let html = '';
+                const now = new Date().getHours();
+                for (let i = now; i < now + 12; i++) {
+                    if (!dL.hourly) break;
+                    html += `<tr>
+                        <td>${dL.hourly.time[i].split('T')[1]}</td>
+                        <td><b>${dL.hourly.wind_speed_10m[i].toFixed(1)}</b></td>
+                        <td>${dL.hourly.wind_direction_10m[i]}°</td>
+                        <td>${dM?.hourly?.wave_height ? dM.hourly.wave_height[i].toFixed(1) : '--'}</td>
+                        <td>${dM?.hourly?.wave_direction ? dM.hourly.wave_direction[i] + '°' : '--'}</td>
+                    </tr>`;
+                }
+                table.innerHTML = html;
+            } catch (e) { table.innerHTML = '<tr><td colspan="5">Erro de rede</td></tr>'; }
+        }
 
         // Wake Lock
         async function wake() { try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch(e) {} }
         wake();
-        document.addEventListener('visibilitychange', () => { if(document.visibilityState==='visible') wake(); });
     </script>
 </body>
 </html>
