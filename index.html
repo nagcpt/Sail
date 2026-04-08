@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#000000">
-    <title>UltraDash Pro</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>UltraDash Final</title>
     
     <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlVsdHJhRGFzaCBQcm8iLAogICJzaG9ydF9uYW1lIjogIlVsdHJhRGFzaCIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMDAwMDAwIiwKICAidGhlbWVfY29sb3ciOiAiIzAwMDAwMCIKfQ==">
 
@@ -12,93 +13,64 @@
         :root {
             --bg: #000000;
             --text: #ffffff;
-            --accent: #333333;
+            --accent: #222222;
             --bordeaux: #800020;
         }
 
         body.night-mode {
             --bg: #050000;
             --text: var(--bordeaux);
-            --accent: #3d000e;
+            --accent: #2a000a;
         }
 
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             background-color: var(--bg);
             color: var(--text);
-            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            overflow: hidden;
-            transition: background-color 0.6s ease, color 0.6s ease;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden;
+            transition: background-color 0.5s, color 0.5s;
         }
 
-        #dash-container {
-            text-align: center;
-            width: 100%;
-            user-select: none;
-        }
+        #dash { text-align: center; width: 100%; user-select: none; }
 
-        /* Rumo e Velocidade com a mesma fonte massiva */
         .big-font {
             font-size: 38vw; 
             font-weight: 900;
-            line-height: 0.9;
+            line-height: 0.85;
             font-variant-numeric: tabular-nums;
-            transition: all 0.4s ease;
+            display: block;
         }
 
-        #bearing {
-            margin-bottom: 2vh;
-        }
-
-        /* Separador Horizontal */
         .separator {
-            width: 60%;
-            height: 4px;
+            width: 70%; height: 4px;
             background-color: var(--accent);
-            margin: 2vh auto;
-            border-radius: 2px;
-            transition: background-color 0.6s ease;
+            margin: 4vh auto;
+            border-radius: 10px;
         }
 
         #unit {
-            font-size: 8vw;
-            font-weight: 300;
+            font-size: 8vw; font-weight: 300;
             color: var(--accent);
-            letter-spacing: 0.5vw;
+            letter-spacing: 2vw;
+            margin-top: 1vh;
         }
 
         #toggleMode {
-            position: absolute;
-            top: 25px;
-            right: 25px;
-            background: rgba(255, 255, 255, 0.03);
-            color: var(--text);
-            border: 1px solid var(--accent);
-            padding: 15px;
-            border-radius: 50%;
-            width: 55px;
-            height: 55px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            z-index: 100;
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text); border: 1px solid var(--accent);
+            width: 50px; height: 50px; border-radius: 50%;
+            font-size: 20px; z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
         }
 
-        #status-bar {
-            position: absolute;
-            bottom: 20px;
-            font-size: 10px;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 2px;
+        #status {
+            position: absolute; bottom: 15px;
+            font-size: 10px; color: var(--accent);
+            letter-spacing: 1px;
         }
     </style>
 </head>
@@ -106,83 +78,90 @@
 
     <button id="toggleMode">🌓</button>
 
-    <div id="dash-container">
+    <div id="dash">
         <div id="bearing" class="big-font">--</div>
-        
         <div class="separator"></div>
-        
         <div id="speed" class="big-font">0</div>
         <div id="unit">KM/H</div>
     </div>
 
-    <div id="status-bar">GPS INITIALIZING...</div>
+    <div id="status">A INICIALIZAR SENSORES...</div>
 
     <script>
         const speedEl = document.getElementById('speed');
         const bearingEl = document.getElementById('bearing');
-        const statusEl = document.getElementById('status-bar');
+        const statusEl = document.getElementById('status');
         const btnMode = document.getElementById('toggleMode');
 
-        let lastSpeed = -1;
+        let lastSpeed = 0;
 
+        // Alternar Modo Noturno
         btnMode.addEventListener('click', () => {
             document.body.classList.toggle('night-mode');
             btnMode.innerText = document.body.classList.contains('night-mode') ? '☀️' : '🌓';
-            if (navigator.vibrate) navigator.vibrate(25);
+            if (navigator.vibrate) navigator.vibrate(20);
         });
 
         function getCardinals(deg) {
             if (deg === null || deg === undefined) return "--";
-            // Direções em Português
             const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
-            return directions[Math.round(deg / 45) % 8];
+            // Ajuste para garantir que 0 é Norte e o cálculo é circular
+            const normalized = ((deg % 360) + 360) % 360;
+            return directions[Math.round(normalized / 45) % 8];
         }
 
-        function onLocationUpdate(pos) {
+        // 1. Rumo via Bússola (Magnetómetro) - Funciona parado
+        window.addEventListener('deviceorientationabsolute', (event) => {
+            if (lastSpeed < 5) { // Só usa bússola se estiver parado ou muito lento
+                let heading = event.alpha;
+                if (heading !== null) {
+                    // No Android deviceorientationabsolute o 0 é o Norte
+                    // mas pode variar conforme a orientação do tlm.
+                    bearingEl.innerText = getCardinals(360 - heading);
+                    bearingEl.style.opacity = "0.6";
+                }
+            }
+        }, true);
+
+        // 2. Dados via GPS
+        function updateGPS(pos) {
             const { speed, heading, accuracy } = pos.coords;
             
-            // Lógica de velocidade: m/s para km/h
-            let kmh = (speed && speed > 0.4) ? Math.round(speed * 3.6) : 0;
-            
-            if (kmh !== lastSpeed) {
-                speedEl.innerText = kmh;
-                lastSpeed = kmh;
-            }
+            // Filtro de velocidade (ignora ruído de sinal abaixo de 0.5 m/s)
+            let kmh = (speed && speed > 0.5) ? Math.round(speed * 3.6) : 0;
+            lastSpeed = kmh;
 
-            // Atualização de Rumo (Heading)
-            if (heading !== null && heading !== undefined) {
+            speedEl.innerText = kmh;
+
+            // Se estiver em movimento, o GPS é muito mais fiável que a bússola
+            if (kmh >= 5 && heading !== null) {
                 bearingEl.innerText = getCardinals(heading);
-            } else if (kmh === 0) {
-                // Se parado, o GPS raramente dá heading fiável
-                bearingEl.style.opacity = "0.3";
-            } else {
                 bearingEl.style.opacity = "1";
             }
 
-            statusEl.innerText = `ACCURACY: ${Math.round(accuracy)}M | GPS ACTIVE`;
+            statusEl.innerText = `PRECISÃO: ${Math.round(accuracy)}M | GPS ATIVO`;
         }
 
         if ("geolocation" in navigator) {
-            navigator.geolocation.watchPosition(onLocationUpdate, (err) => {
-                statusEl.innerText = "GPS ERROR: " + err.message;
-            }, {
-                enableHighAccuracy: true,
-                maximumAge: 0,
-                timeout: 10000
-            });
+            navigator.geolocation.watchPosition(updateGPS, 
+                (err) => { statusEl.innerText = "ERRO GPS: " + err.message; }, 
+                { enableHighAccuracy: true, maximumAge: 0 }
+            );
         }
 
-        // Wake Lock
+        // 3. Wake Lock (Manter ecrã ligado)
         let wakeLock = null;
-        async function initWakeLock() {
+        const requestWakeLock = async () => {
             try {
-                if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
-            } catch (e) {}
-        }
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) {}
+        };
+        requestWakeLock();
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') initWakeLock();
+            if (document.visibilityState === 'visible') requestWakeLock();
         });
-        initWakeLock();
     </script>
 </body>
 </html>
