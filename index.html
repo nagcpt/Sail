@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#000000">
-    <title>UltraDash Ultra-Stable</title>
+    <title>UltraDash Marine v5</title>
     <style>
         :root { --bg: #000000; --text: #ffffff; --accent: #333333; --bordeaux: #800020; }
         body.night-mode { --bg: #050000; --text: var(--bordeaux); --accent: #2a000a; }
@@ -22,10 +22,10 @@
         #speed { font-size: 38vw; }
         
         .separator { width: 70%; height: 4px; background-color: var(--accent); margin: 2vh auto; border-radius: 10px; }
-        #unit { font-size: 7vw; color: var(--accent); letter-spacing: 2vw; }
+        #unit { font-size: 7vw; color: var(--accent); letter-spacing: 2vw; font-weight: bold; }
 
         .fab {
-            position: absolute; width: 50px; height: 50px; border-radius: 50%;
+            position: absolute; width: 55px; height: 55px; border-radius: 50%;
             background: #111; color: white; border: 1px solid #333;
             display: flex; align-items: center; justify-content: center; z-index: 1000;
         }
@@ -38,11 +38,13 @@
             padding: 15px; box-sizing: border-box; overflow-y: auto;
         }
         #weather-screen.active { display: flex; }
-        .close-btn { padding: 15px; background: var(--bordeaux); color: white; border: none; border-radius: 8px; font-weight: bold; margin-bottom: 15px; }
+        .close-btn { padding: 15px; background: var(--bordeaux); color: white; border: none; border-radius: 8px; font-weight: bold; margin-bottom: 15px; width: 100%; }
+
+        #location-tag { font-size: 0.9rem; color: #aaa; margin-bottom: 15px; text-align: center; font-style: italic; }
 
         table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
         th, td { padding: 10px 2px; text-align: center; border-bottom: 1px solid #222; }
-        th { color: var(--bordeaux); }
+        th { color: var(--bordeaux); text-transform: uppercase; font-size: 0.65rem; }
 
         #status-bar { position: absolute; bottom: 15px; width: 100%; text-align: center; font-family: monospace; }
         #coords { font-size: 3.5vw; opacity: 0.7; margin-bottom: 4px; }
@@ -57,25 +59,26 @@
     <div id="dash-screen">
         <div id="bearing" class="big-font">0°</div>
         <div class="separator"></div>
-        <div id="speed" class="big-font">0</div>
-        <div id="unit">KM/H</div>
+        <div id="speed" class="big-font">0.0</div>
+        <div id="unit">KNOTS</div>
         
         <div id="status-bar">
             <div id="coords">A AGUARDAR GPS...</div>
-            <div id="info">---</div>
+            <div id="info">SINAL REQUERIDO</div>
         </div>
     </div>
 
     <div id="weather-screen">
-        <button class="close-btn" id="closeWeather">FECHAR</button>
-        <h2 style="text-align:center; color:var(--bordeaux)">PREVISÃO 12H</h2>
+        <button class="close-btn" id="closeWeather">VOLTAR AO DASH</button>
+        <h2 style="text-align:center; color:var(--bordeaux); margin-bottom: 5px;">PREVISÃO 12H</h2>
+        <div id="location-tag">A localizar...</div>
         <table>
             <thead>
                 <tr>
-                    <th>H</th>
-                    <th>Vento</th>
+                    <th>Hora</th>
+                    <th>Vento (kn)</th>
                     <th>Dir.</th>
-                    <th>Onda</th>
+                    <th>Onda (m)</th>
                     <th>Dir.</th>
                 </tr>
             </thead>
@@ -84,59 +87,74 @@
     </div>
 
     <script>
-        // Seletores
         const speedEl = document.getElementById('speed');
         const bearingEl = document.getElementById('bearing');
         const coordsEl = document.getElementById('coords');
         const infoEl = document.getElementById('info');
         const weatherScreen = document.getElementById('weather-screen');
         const forecastTable = document.getElementById('forecast-table');
+        const locationTag = document.getElementById('location-tag');
 
-        // Estado Global
         let state = { lat: null, lon: null, speed: 0 };
 
-        // 1. Alternar Modo Noturno (Simples e Seguro)
         document.getElementById('toggleMode').onclick = () => {
             document.body.classList.toggle('night-mode');
         };
 
-        // 2. Meteorologia (Com Try/Catch Total)
+        // Meteorologia com Geocoding reverso
         async function fetchWeather() {
-            forecastTable.innerHTML = '<tr><td colspan="5">A carregar...</td></tr>';
+            forecastTable.innerHTML = '<tr><td colspan="5">A ler sensores marítimos...</td></tr>';
+            locationTag.innerText = "A identificar localização...";
+            
             try {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=auto`;
+                const geoUrl = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${state.lat}&longitude=${state.lon}&count=1`;
+                const landUrl = `https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=auto`;
                 const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${state.lat}&longitude=${state.lon}&hourly=wave_height,wave_direction&timezone=auto`;
 
-                const [resLand, resMarine] = await Promise.all([fetch(url), fetch(marineUrl)]);
+                const [resGeo, resLand, resMarine] = await Promise.all([
+                    fetch(geoUrl), fetch(landUrl), fetch(marineUrl)
+                ]);
+
+                const geoData = await resGeo.json();
                 const landData = await resLand.json();
                 const marineData = await resMarine.json();
+
+                // Identificar local
+                if (geoData.results && geoData.results[0]) {
+                    const loc = geoData.results[0];
+                    locationTag.innerText = `${loc.name || ''}, ${loc.admin1 || ''} (${loc.country || ''})`;
+                } else {
+                    locationTag.innerText = "Posição: Mar Aberto / Coordenadas Atuais";
+                }
 
                 let html = '';
                 const now = new Date().getHours();
 
                 for (let i = now; i < now + 12; i++) {
-                    const time = landData?.hourly?.time[i]?.split('T')[1] || '--';
-                    const wind = landData?.hourly?.wind_speed_10m[i] || 0;
-                    const windDir = landData?.hourly?.wind_direction_10m[i] || 0;
+                    if (!landData?.hourly?.time[i]) break;
+                    
+                    const time = landData.hourly.time[i].split('T')[1] || '--';
+                    const wind = landData.hourly.wind_speed_10m[i] || 0;
+                    const windDir = landData.hourly.wind_direction_10m[i] || 0;
                     const wave = marineData?.hourly?.wave_height ? marineData.hourly.wave_height[i] : null;
                     const waveDir = marineData?.hourly?.wave_direction ? marineData.hourly.wave_direction[i] : null;
 
                     html += `<tr>
                         <td>${time}</td>
-                        <td style="font-weight:bold">${wind.toFixed(1)} kn</td>
+                        <td style="font-weight:bold; color:var(--text)">${wind.toFixed(1)}</td>
                         <td>${windDir}°</td>
-                        <td>${wave ? wave.toFixed(1)+'m' : '--'}</td>
+                        <td>${wave ? wave.toFixed(1) : '--'}</td>
                         <td>${waveDir ? waveDir+'°' : '--'}</td>
                     </tr>`;
                 }
                 forecastTable.innerHTML = html;
             } catch (err) {
-                forecastTable.innerHTML = `<tr><td colspan="5" style="color:red">Erro ao carregar dados.</td></tr>`;
+                forecastTable.innerHTML = `<tr><td colspan="5" style="color:red">Erro na rede ou local remoto.</td></tr>`;
             }
         }
 
         document.getElementById('openWeather').onclick = () => {
-            if (!state.lat) return alert("Sem sinal GPS.");
+            if (!state.lat) return alert("Aguarde por sinal GPS...");
             weatherScreen.classList.add('active');
             fetchWeather();
         };
@@ -145,41 +163,43 @@
             weatherScreen.classList.remove('active');
         };
 
-        // 3. GPS (Isolado)
+        // GPS em Knots
         if ("geolocation" in navigator) {
             navigator.geolocation.watchPosition((pos) => {
                 state.lat = pos.coords.latitude;
                 state.lon = pos.coords.longitude;
                 state.speed = pos.coords.speed || 0;
 
-                let kmh = Math.round(state.speed * 3.6);
-                speedEl.innerText = kmh > 1 ? kmh : 0;
+                // m/s to Knots: 1.94384
+                let knots = state.speed * 1.94384;
+                speedEl.innerText = knots > 0.2 ? knots.toFixed(1) : "0.0";
                 
-                if (pos.coords.heading !== null && kmh > 5) {
+                if (pos.coords.heading !== null && state.speed > 0.5) {
                     bearingEl.innerText = Math.round(pos.coords.heading) + "°";
                     bearingEl.style.opacity = "1";
                 }
 
-                coordsEl.innerText = `${state.lat.toFixed(4)}, ${state.lon.toFixed(4)}`;
+                coordsEl.innerText = `${state.lat.toFixed(5)}, ${state.lon.toFixed(5)}`;
                 infoEl.innerText = `Precisão: ${Math.round(pos.coords.accuracy)}m`;
             }, (err) => {
-                infoEl.innerText = "Erro GPS: " + err.code;
+                infoEl.innerText = "Erro GPS: " + err.message;
             }, { enableHighAccuracy: true });
         }
 
-        // 4. Bússola (Isolada com Fallback)
+        // Bússola magnética (parado)
         window.addEventListener('deviceorientationabsolute', (e) => {
-            if (state.speed < 1.5 && e.alpha !== null) {
+            if (state.speed < 1 && e.alpha !== null) {
                 bearingEl.innerText = Math.round(360 - e.alpha) + "°";
-                bearingEl.style.opacity = "0.5";
+                bearingEl.style.opacity = "0.6";
             }
         }, true);
 
-        // 5. WakeLock (Opcional - não bloqueia se falhar)
-        async function runWakeLock() {
+        // Manter ecrã ativo
+        async function wake() {
             try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch(e) {}
         }
-        runWakeLock();
+        wake();
+        document.addEventListener('visibilitychange', () => { if(document.visibilityState==='visible') wake(); });
     </script>
 </body>
 </html>
