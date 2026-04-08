@@ -3,332 +3,376 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UltraDash Marine v11</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>UltraDash Marine</title>
 
+    <!-- Orbitron via Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@900&display=swap" rel="stylesheet">
 
     <style>
+        /* ─── Reset & root ─── */
         :root {
-            --bg:          #0a0a0a;
-            --on:          #ffffff;
-            --cell-bg:     #111111;
-            --cell-border: rgba(255,255,255,0.18);
-            --glow:        0 0 20px rgba(255,255,255,0.35);
-            --label-col:   rgba(255,255,255,0.55);
+            --bg:     #0c0c0c;
+            --on:     #ffffff;
+            --dim:    #1e1e1e;
+            --border: rgba(255,255,255,0.20);
+            --glow:   0 0 22px rgba(255,255,255,0.40), 0 0 6px rgba(255,255,255,0.20);
+            --lbl:    rgba(255,255,255,0.50);
+            --sep:    rgba(255,255,255,0.13);
+        }
+        body.night {
+            --bg:     #050000;
+            --on:     #d0001a;
+            --dim:    #150004;
+            --border: rgba(208,0,26,0.30);
+            --glow:   0 0 22px rgba(208,0,26,0.55), 0 0 6px rgba(208,0,26,0.25);
+            --lbl:    rgba(208,0,26,0.55);
+            --sep:    rgba(208,0,26,0.18);
         }
 
-        body.night-mode {
-            --bg:          #040000;
-            --on:          #cc001e;
-            --cell-bg:     #0e0003;
-            --cell-border: rgba(204,0,30,0.3);
-            --glow:        0 0 20px rgba(204,0,30,0.55);
-            --label-col:   rgba(204,0,30,0.55);
-        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
+        html, body {
+            width: 100%;
+            height: 100%;
+            /* Android full-screen fallbacks */
+            height: -webkit-fill-available;
             background: var(--bg);
             color: var(--on);
-            font-family: 'Orbitron', sans-serif;
-            height: 100dvh;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
-        /* ── Top nav ── */
-        #top-nav {
+        /* ─── Wrapper: 3 rows — top / center / footer ─── */
+        #app {
+            width: 100%;
+            height: 100%;
+            height: -webkit-fill-available;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ─── Top bar ─── */
+        #topbar {
+            width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 20px;
-            position: absolute;
-            top: 0; width: 100%;
-            z-index: 100;
+            padding: 14px 18px;
+            flex-shrink: 0;
         }
 
-        .icon-btn {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.12);
+        .btn {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.14);
             color: var(--on);
             border-radius: 10px;
             width: 44px; height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             font-size: 20px;
             cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
-        .icon-btn:active { background: rgba(255,255,255,0.15); }
+        .btn:active { background: rgba(255,255,255,0.18); }
 
-        /* ── Main layout ── */
-        #main-display {
+        /* ─── Centre section: fills remaining height ─── */
+        #centre {
             flex: 1;
+            width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 0;
-            padding: 60px 16px 0;
+            padding: 0 12px;
+            /* prevent overflow */
+            overflow: hidden;
         }
 
-        /* ── Section label ── */
-        .label {
-            font-size: 11px;
-            letter-spacing: 5px;
-            color: var(--label-col);
+        /* ─── Labels ─── */
+        .lbl {
+            font-family: 'Orbitron', monospace;
             font-weight: 900;
+            font-size: clamp(9px, 3vw, 14px);
+            letter-spacing: 0.4em;
+            color: var(--lbl);
             text-transform: uppercase;
-            margin-bottom: 10px;
-            margin-top: 4px;
         }
+        .lbl-top    { margin-bottom: 10px; }
+        .lbl-bottom { margin-top: 10px; }
 
-        /* ── Digit row ── */
-        .digit-row {
+        /* ─── Digit row ─── */
+        .drow {
             display: flex;
-            align-items: center;
-            gap: 6px;
+            align-items: stretch;
+            justify-content: center;
+            gap: 5px;
         }
 
-        /* Individual digit cell */
-        .d-cell {
-            background: var(--cell-bg);
-            border: 1.5px solid var(--cell-border);
+        /*
+         * Each digit cell: width driven by content,
+         * height = 1.12 × width (portrait rectangle).
+         * We use aspect-ratio + width in vw so it scales.
+         * 3 cells + degree symbol must fit in ~94vw.
+         * Heading: 3 cells × 26vw = 78vw + gaps + °  ≈ 94vw ✓
+         * Speed:   3 cells + dot cell + gaps          ≈ 94vw ✓
+         */
+        .dc {
+            background: var(--dim);
+            border: 1.5px solid var(--border);
             border-radius: 10px;
-            width: 23vw;
-            height: 26vw;
+            width: 26vw;
+            aspect-ratio: 0.85 / 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Orbitron', monospace;
             font-weight: 900;
-            font-size: 18vw;
+            font-size: 19vw;
+            line-height: 1;
             color: var(--on);
             text-shadow: var(--glow);
-            line-height: 1;
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.6), inset 0 -1px 3px rgba(255,255,255,0.03);
+            box-shadow:
+                inset 0 2px 10px rgba(0,0,0,0.55),
+                inset 0 -1px 2px rgba(255,255,255,0.04);
+            /* no overflow */
+            overflow: hidden;
         }
 
-        /* Decimal point cell – narrower */
-        .d-cell.dot {
-            width: 8vw;
-            font-size: 14vw;
+        /* Decimal dot — narrower cell */
+        .dc.dot {
+            width: 9vw;
+            font-size: 15vw;
         }
 
-        /* Degree symbol – outside box */
-        .deg-sym {
-            font-family: Arial, sans-serif;
-            font-size: 8vw;
+        /* Degree symbol — no box */
+        .deg {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 9vw;
             color: var(--on);
             align-self: flex-start;
-            margin-top: 2vw;
+            padding-top: 1.5vw;
             margin-left: 2px;
-            opacity: 0.85;
+            opacity: 0.80;
+            flex-shrink: 0;
         }
 
-        /* ── Separator ── */
-        .separator {
-            width: 90%;
+        /* ─── Separator ─── */
+        .sep {
+            width: 88%;
             height: 1px;
-            background: var(--on);
-            opacity: 0.12;
-            margin: 22px 0;
+            background: var(--sep);
+            flex-shrink: 0;
+            margin: 18px 0;
         }
 
-        /* ── Footer ── */
+        /* ─── Footer ─── */
         #footer {
-            padding: 12px 0 14px;
+            width: 100%;
+            flex-shrink: 0;
             text-align: center;
             border-top: 1px solid rgba(255,255,255,0.06);
-            width: 100%;
+            padding: 10px 0 12px;
         }
-
         #coords {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(10px, 3.2vw, 13px);
+            letter-spacing: 0.04em;
             color: var(--on);
-            opacity: 0.8;
+            opacity: 0.75;
+            margin-bottom: 3px;
         }
-        #precision {
-            font-family: 'Courier New', monospace;
-            font-size: 9px;
+        #prec {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(8px, 2.4vw, 10px);
             opacity: 0.35;
+            letter-spacing: 0.15em;
             text-transform: uppercase;
-            letter-spacing: 2px;
         }
 
-        /* ── Weather overlay ── */
-        #weather-overlay {
+        /* ─── Weather overlay ─── */
+        #wx {
             position: fixed; inset: 0;
             background: #000;
-            z-index: 2000;
+            z-index: 999;
             display: none;
-            padding: 20px;
             flex-direction: column;
+            padding: 18px;
         }
-        #weather-overlay.active { display: flex; }
+        #wx.open { display: flex; }
 
-        .close-btn {
-            padding: 14px;
+        .wx-close {
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            padding: 13px;
             background: var(--on);
             color: #000;
             border: none;
-            font-weight: bold;
             border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 13px;
-            letter-spacing: 2px;
+            font-size: 12px;
+            letter-spacing: 0.2em;
+            margin-bottom: 18px;
             cursor: pointer;
-            font-family: 'Orbitron', sans-serif;
         }
-
+        #wx-body { overflow-y: auto; flex: 1; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; font-family: 'Courier New', monospace; }
-        th, td { padding: 11px 5px; border-bottom: 1px solid #1a1a1a; text-align: center; }
-        th { opacity: 0.45; font-size: 10px; letter-spacing: 2px; }
+        th, td { padding: 10px 4px; border-bottom: 1px solid #1c1c1c; text-align: center; }
+        th { opacity: 0.4; font-size: 10px; letter-spacing: 0.2em; }
     </style>
 </head>
 <body>
 
-    <div id="top-nav">
-        <button id="openWeather" class="icon-btn">⚓</button>
-        <button id="toggleMode"  class="icon-btn">🌓</button>
+<div id="app">
+
+    <div id="topbar">
+        <button class="btn" id="btnWx">⚓</button>
+        <button class="btn" id="btnMode">🌓</button>
     </div>
 
-    <div id="main-display">
+    <div id="centre">
 
-        <!-- HEADING -->
-        <div class="label">HEADING</div>
-        <div class="digit-row">
-            <div class="d-cell" id="h0">0</div>
-            <div class="d-cell" id="h1">0</div>
-            <div class="d-cell" id="h2">0</div>
-            <span class="deg-sym">°</span>
+        <div class="lbl lbl-top">Heading</div>
+
+        <div class="drow" id="heading-row">
+            <div class="dc" id="h0">0</div>
+            <div class="dc" id="h1">0</div>
+            <div class="dc" id="h2">0</div>
+            <span class="deg">°</span>
         </div>
 
-        <div class="separator"></div>
+        <div class="sep"></div>
 
-        <!-- SPEED -->
-        <div class="digit-row">
-            <div class="d-cell" id="s0">0</div>
-            <div class="d-cell" id="s1">0</div>
-            <div class="d-cell dot"id="s2">.</div>
-            <div class="d-cell" id="s3">0</div>
+        <div class="drow" id="speed-row">
+            <div class="dc" id="s0">0</div>
+            <div class="dc" id="s1">0</div>
+            <div class="dc dot">.</div>
+            <div class="dc" id="s2">0</div>
         </div>
-        <div class="label" style="margin-top:12px;">KNOTS</div>
+
+        <div class="lbl lbl-bottom">Knots</div>
 
     </div>
 
     <div id="footer">
         <div id="coords">LAT: --.----° N &nbsp;|&nbsp; LON: --.----° W</div>
-        <div id="precision">PRECISÃO: --M &nbsp;|&nbsp; GPS STATUS OK</div>
+        <div id="prec">PRECISÃO: -- M &nbsp;|&nbsp; GPS OK</div>
     </div>
 
-    <div id="weather-overlay">
-        <button class="close-btn" onclick="toggleWeather()">← VOLTAR</button>
-        <div id="meteo-body"></div>
-    </div>
+</div>
 
-    <script>
-        const state = { lat: null, lon: null, speed: 0 };
+<!-- Weather panel -->
+<div id="wx">
+    <button class="wx-close" id="btnWxClose">← Voltar</button>
+    <div id="wx-body"><p style="opacity:.4;text-align:center;margin-top:20px">A aguardar GPS…</p></div>
+</div>
 
-        const elCoords = document.getElementById('coords');
-        const elPrec   = document.getElementById('precision');
-        const overlay  = document.getElementById('weather-overlay');
+<script>
+"use strict";
+const S = { lat: null, lon: null, spd: 0 };
 
-        function setHeading(val) {
-            const s = Math.round(val).toString().padStart(3, '0');
-            document.getElementById('h0').textContent = s[0];
-            document.getElementById('h1').textContent = s[1];
-            document.getElementById('h2').textContent = s[2];
+/* ── DOM refs ── */
+const H = [0,1,2].map(i => document.getElementById('h' + i));
+const SP = [0,1,2].map(i => document.getElementById('s' + i));
+const elCoords = document.getElementById('coords');
+const elPrec   = document.getElementById('prec');
+const wxPanel  = document.getElementById('wx');
+
+/* ── Render helpers ── */
+function renderHeading(deg) {
+    const s = Math.round(((deg % 360) + 360) % 360).toString().padStart(3,'0');
+    H.forEach((el, i) => el.textContent = s[i]);
+}
+
+function renderSpeed(ms) {
+    const kn = ms * 1.94384;
+    // Format: 00.0  → digits only "000"
+    let raw;
+    if (kn < 0.1) { raw = '000'; }
+    else {
+        // cap at 99.9
+        const capped = Math.min(kn, 99.9);
+        raw = capped.toFixed(1).replace('.', '').padStart(3, '0');
+    }
+    SP.forEach((el, i) => el.textContent = raw[i]);
+}
+
+renderHeading(0);
+renderSpeed(0);
+
+/* ── Night mode ── */
+document.getElementById('btnMode').addEventListener('click', () =>
+    document.body.classList.toggle('night'));
+
+/* ── GPS ── */
+if ('geolocation' in navigator) {
+    navigator.geolocation.watchPosition(pos => {
+        const { latitude: lat, longitude: lon, speed, heading, accuracy } = pos.coords;
+        S.lat = lat; S.lon = lon; S.spd = speed || 0;
+
+        renderSpeed(S.spd);
+        if (heading !== null && S.spd > 0.3) renderHeading(heading);
+
+        const la = Math.abs(lat).toFixed(4);
+        const lo = Math.abs(lon).toFixed(4);
+        elCoords.innerHTML =
+            `LAT: ${la}°\u202F${lat >= 0 ? 'N' : 'S'} &nbsp;|&nbsp; LON: ${lo}°\u202F${lon >= 0 ? 'E' : 'W'}`;
+        elPrec.textContent = `PRECISÃO: ${Math.round(accuracy)} M  |  GPS OK`;
+    },
+    err => {
+        elPrec.textContent = 'GPS: ' + (err.code === 1 ? 'PERMISSÃO NEGADA' : 'SEM SINAL');
+    },
+    { enableHighAccuracy: true, maximumAge: 500, timeout: 10000 });
+}
+
+/* ── Compass (parado) ── */
+window.addEventListener('deviceorientationabsolute', e => {
+    if (S.spd < 0.3 && e.alpha !== null) renderHeading(360 - e.alpha);
+}, true);
+
+/* ── Weather ── */
+document.getElementById('btnWx').addEventListener('click', () => {
+    if (!S.lat) { alert('Aguardar sinal GPS.'); return; }
+    wxPanel.classList.add('open');
+    loadWx();
+});
+document.getElementById('btnWxClose').addEventListener('click', () =>
+    wxPanel.classList.remove('open'));
+
+async function loadWx() {
+    const body = document.getElementById('wx-body');
+    body.innerHTML = '<p style="opacity:.4;text-align:center;margin-top:20px">A carregar…</p>';
+    try {
+        const [r1, r2] = await Promise.all([
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${S.lat}&longitude=${S.lon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=auto`),
+            fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${S.lat}&longitude=${S.lon}&hourly=wave_height&timezone=auto`)
+        ]);
+        const d1 = await r1.json(), d2 = await r2.json();
+        const h0 = new Date().getHours();
+        let html = '<table><tr><th>HORA</th><th>KN</th><th>DIR</th><th>ONDA</th></tr>';
+        for (let i = h0; i < h0 + 12 && d1.hourly; i++) {
+            html += `<tr>
+                <td>${d1.hourly.time[i].split('T')[1]}</td>
+                <td>${d1.hourly.wind_speed_10m[i].toFixed(1)}</td>
+                <td>${d1.hourly.wind_direction_10m[i]}°</td>
+                <td>${d2.hourly ? d2.hourly.wave_height[i].toFixed(1) + 'm' : '--'}</td>
+            </tr>`;
         }
+        body.innerHTML = html + '</table>';
+    } catch { body.innerHTML = '<p style="opacity:.4;text-align:center">Erro de rede.</p>'; }
+}
 
-        function setSpeed(kn) {
-            let s;
-            if (kn < 0.1) {
-                s = '000';
-            } else {
-                // e.g. 12.5 → remove dot → "125"
-                s = kn.toFixed(1).replace('.', '').padStart(3, '0');
-            }
-            document.getElementById('s0').textContent = s[0];
-            document.getElementById('s1').textContent = s[1];
-            // s2 is static dot
-            document.getElementById('s3').textContent = s[2];
-        }
-
-        setHeading(0);
-        setSpeed(0);
-
-        document.getElementById('toggleMode').onclick = () =>
-            document.body.classList.toggle('night-mode');
-
-        if ("geolocation" in navigator) {
-            navigator.geolocation.watchPosition((pos) => {
-                const { latitude, longitude, speed, heading, accuracy } = pos.coords;
-                state.lat   = latitude;
-                state.lon   = longitude;
-                state.speed = speed || 0;
-
-                setSpeed(state.speed * 1.94384);
-
-                if (heading !== null && state.speed > 0.5)
-                    setHeading(heading);
-
-                const latD = Math.abs(latitude).toFixed(4);
-                const lonD = Math.abs(longitude).toFixed(4);
-                elCoords.innerHTML = `LAT: ${latD}° ${latitude >= 0 ? 'N' : 'S'} &nbsp;|&nbsp; LON: ${lonD}° ${longitude >= 0 ? 'E' : 'W'}`;
-                elPrec.textContent = `PRECISÃO: ${Math.round(accuracy)}M  |  GPS OK`;
-            }, null, { enableHighAccuracy: true });
-        }
-
-        window.addEventListener('deviceorientationabsolute', (e) => {
-            if (state.speed < 1 && e.alpha !== null)
-                setHeading(360 - e.alpha);
-        }, true);
-
-        function toggleWeather() {
-            if (!state.lat) return alert("Sinal GPS insuficiente.");
-            overlay.classList.toggle('active');
-            if (overlay.classList.contains('active')) fetchWeather();
-        }
-        document.getElementById('openWeather').onclick = toggleWeather;
-
-        async function fetchWeather() {
-            const body = document.getElementById('meteo-body');
-            body.innerHTML = "<p style='text-align:center;opacity:.5;font-family:Courier New'>A carregar…</p>";
-            try {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=auto`;
-                const mar = `https://marine-api.open-meteo.com/v1/marine?latitude=${state.lat}&longitude=${state.lon}&hourly=wave_height&timezone=auto`;
-                const [r1, r2] = await Promise.all([fetch(url), fetch(mar)]);
-                const d1 = await r1.json();
-                const d2 = await r2.json();
-                let html = "<table><tr><th>HORA</th><th>KN</th><th>DIR</th><th>ONDA</th></tr>";
-                const h0 = new Date().getHours();
-                for (let i = h0; i < h0 + 12; i++) {
-                    if (!d1.hourly) break;
-                    html += `<tr>
-                        <td>${d1.hourly.time[i].split('T')[1]}</td>
-                        <td>${d1.hourly.wind_speed_10m[i].toFixed(1)}</td>
-                        <td>${d1.hourly.wind_direction_10m[i]}°</td>
-                        <td>${d2.hourly ? d2.hourly.wave_height[i].toFixed(1)+'m' : '--'}</td>
-                    </tr>`;
-                }
-                body.innerHTML = html + "</table>";
-            } catch(e) {
-                body.innerHTML = "<p style='opacity:.5'>Erro de rede.</p>";
-            }
-        }
-
-        async function wake() {
-            try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch(e) {}
-        }
-        wake();
-    </script>
+/* ── Wake Lock ── */
+(async () => {
+    try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch {}
+})();
+</script>
 </body>
 </html>
