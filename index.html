@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#000000">
-    <title>UltraDash Marine Pro v2</title>
+    <title>UltraDash Marine Elite v3</title>
     
     <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlVsdHJhRGFzaCBNYXJpbmUiLAogICJzaG9ydF9uYW1lIjogIlVsdHJhRGFzaCIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMDAwMDAwIiwKICAidGhlbWVfY29sb3ciOiAiIzAwMDAwMCIKfQ==">
 
@@ -43,9 +43,9 @@
         .close-btn { align-self: flex-end; padding: 12px 24px; background: var(--bordeaux); color: white; border: none; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
 
         h2 { color: var(--bordeaux); margin: 0 0 15px 0; font-size: 1.2rem; text-transform: uppercase; text-align: center; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-        th, td { padding: 10px 5px; text-align: center; border-bottom: 1px solid var(--accent); }
-        th { color: var(--bordeaux); font-size: 0.65rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        th, td { padding: 10px 2px; text-align: center; border-bottom: 1px solid var(--accent); }
+        th { color: var(--bordeaux); font-size: 0.6rem; }
         .knots { font-weight: bold; color: var(--text); }
 
         #status-container { position: absolute; bottom: 20px; text-align: center; width: 100%; font-family: monospace; }
@@ -66,7 +66,7 @@
         
         <div id="status-container">
             <div id="coords">LAT: --- | LON: ---</div>
-            <div id="info">GPS A SINTONIZAR...</div>
+            <div id="info">SINAL GPS REQUERIDO...</div>
         </div>
     </div>
 
@@ -107,7 +107,7 @@
 
         function toggleWeather() {
             if (!lastLat || !lastLon) {
-                alert("Aguarde pelo sinal GPS antes de consultar a meteorologia.");
+                alert("Sem sinal GPS. Sai para o exterior ou aguarda pela localização.");
                 return;
             }
             weatherScreen.classList.toggle('active');
@@ -116,76 +116,20 @@
         document.getElementById('openWeather').addEventListener('click', toggleWeather);
 
         async function fetchWeather() {
-            tableBody.innerHTML = '<tr><td colspan="5">A ler sensores...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5">A carregar dados...</td></tr>';
             
             try {
-                // Tenta primeiro a API Marítima
-                const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lastLat}&longitude=${lastLon}&hourly=wave_height,wave_direction,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&forecast_days=1`;
+                // 1. Tentar API Marítima (Ondas)
+                const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lastLat}&longitude=${lastLon}&hourly=wave_height,wave_direction,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=auto`;
                 
                 let response = await fetch(marineUrl);
                 let data = await response.json();
 
-                // Se der erro ou não houver dados horários (estás em terra), tenta a API de terra
-                if (data.error || !data.hourly) {
+                // 2. Se a API Marítima falhar ou não tiver dados horários (estás em terra/interior)
+                if (!data?.hourly?.time) {
                     meteoTitle.innerText = "Modo Terra (Sem Ondas)";
-                    const landUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lastLat}&longitude=${lastLon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&forecast_days=1`;
+                    const landUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lastLat}&longitude=${lastLon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=auto`;
                     response = await fetch(landUrl);
                     data = await response.json();
                 } else {
-                    meteoTitle.innerText = "Previsão Marítima (12h)";
-                }
-
-                if (!data.hourly) throw new Error("Dados indisponíveis");
-
-                const nowIndex = new Date().getHours();
-                let html = '';
-
-                for (let i = nowIndex; i < Math.min(nowIndex + 12, data.hourly.time.length); i++) {
-                    const time = data.hourly.time[i].split('T')[1];
-                    const windSpd = data.hourly.wind_speed_10m[i].toFixed(1);
-                    const windDir = data.hourly.wind_direction_10m[i];
-                    
-                    // Verificação para ondas (podem não existir na API de terra)
-                    const waveH = (data.hourly.wave_height && data.hourly.wave_height[i]) ? data.hourly.wave_height[i].toFixed(1) + 'm' : '--';
-                    const waveDir = (data.hourly.wave_direction && data.hourly.wave_direction[i]) ? data.hourly.wave_direction[i] + '°' : '--';
-
-                    html += `<tr>
-                        <td>${time}</td>
-                        <td class="knots">${windSpd}</td>
-                        <td>${windDir}°</td>
-                        <td>${waveH}</td>
-                        <td>${waveDir}</td>
-                    </tr>`;
-                }
-                tableBody.innerHTML = html;
-            } catch (err) {
-                tableBody.innerHTML = `<tr><td colspan="5" style="color:red; padding:20px;">ERRO: ${err.message}<br>Verifica a tua ligação à internet.</td></tr>`;
-            }
-        }
-
-        function updatePosition(pos) {
-            const { speed, heading, latitude, longitude, accuracy } = pos.coords;
-            lastLat = latitude;
-            lastLon = longitude;
-            
-            let kmh = (speed && speed > 0.5) ? Math.round(speed * 3.6) : 0;
-            lastSpeed = kmh;
-            speedEl.innerText = kmh;
-
-            if (kmh >= 5 && heading !== null) {
-                bearingEl.innerText = Math.round(heading) + "°";
-                bearingEl.style.opacity = "1";
-            }
-
-            coordsEl.innerText = `LAT: ${latitude.toFixed(5)} | LON: ${longitude.toFixed(5)}`;
-            infoEl.innerText = `PRECISÃO: ${Math.round(accuracy)}M | GPS ATIVO`;
-        }
-
-        window.addEventListener('deviceorientationabsolute', (e) => {
-            if (lastSpeed < 5 && e.alpha !== null) {
-                bearingEl.innerText = Math.round(360 - e.alpha) + "°";
-                bearingEl.style.opacity = "0.5";
-            }
-        }, true);
-
-        if ("geolocation" in navigator) {
+                    meteoTitle.innerText = "Previs
