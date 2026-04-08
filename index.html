@@ -3,201 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UltraDash Marine v10</title>
+    <title>UltraDash Marine v11</title>
     
-    <link href="https://fonts.cdnfonts.com/css/digital-7-mono" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dseg@2.1.0/css/dseg.min.css">
 
     <style>
         :root { 
             --bg: #000000; 
-            --led-on: #ffffff; 
-            --led-off: #111111; /* Cor dos segmentos desligados */
-            --glow: rgba(255, 255, 255, 0.4);
-            --bordeaux: #800020; 
+            --on: #ffffff; 
+            --off: #151515; /* Segmentos fantasma */
+            --glow: 0 0 15px rgba(255, 255, 255, 0.4);
         }
 
         body.night-mode { 
-            --led-on: #800020; 
-            --led-off: #1a0004;
-            --glow: rgba(128, 0, 32, 0.5);
+            --bg: #050000; 
+            --on: #800020; 
+            --off: #1a0004;
+            --glow: 0 0 15px rgba(128, 0, 32, 0.5);
         }
 
         body {
-            margin: 0; padding: 0; background-color: var(--bg); color: var(--led-on);
-            font-family: sans-serif; height: 100vh; overflow: hidden;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            margin: 0; padding: 0; background-color: var(--bg); color: var(--on);
+            font-family: Arial, sans-serif; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column;
         }
 
-        /* Contentores principais */
-        #dash { width: 100%; display: flex; flex-direction: column; align-items: center; }
+        /* Botões do Topo - Posição Mockup */
+        #top-nav {
+            display: flex; justify-content: space-between; padding: 20px;
+            position: absolute; top: 0; width: 100%; box-sizing: border-box; z-index: 100;
+        }
 
-        /* Estilo comum para as secções de display */
-        .display-container { position: relative; display: flex; flex-direction: column; align-items: center; }
+        .icon-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid #333;
+            color: var(--on); border-radius: 8px; width: 45px; height: 45px;
+            display: flex; align-items: center; justify-content: center; font-size: 22px;
+        }
+
+        /* Layout Centralizado conforme Mockup */
+        #main-display {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; padding-top: 40px;
+        }
 
         .label { 
-            font-size: 18px; letter-spacing: 4px; opacity: 0.8; 
-            font-weight: bold; margin-bottom: 5px; text-transform: uppercase;
+            font-size: 14px; letter-spacing: 3px; opacity: 0.7; 
+            font-weight: bold; margin: 10px 0;
         }
 
-        /* O truque dos 7 segmentos */
-        .digital-wrapper { position: relative; font-family: 'Digital-7 Mono', sans-serif; }
+        /* Digital LCD Styles */
+        .lcd-wrapper { position: relative; font-family: 'DSEG7-Classic', sans-serif; font-style: italic; }
+        .lcd-ghost { color: var(--off); position: absolute; top: 0; left: 0; }
+        .lcd-value { position: relative; text-shadow: var(--glow); z-index: 2; }
 
-        /* Segmentos de fundo (oitos fixos) */
-        .ghost { color: var(--led-off); position: absolute; top: 0; left: 0; z-index: 1; }
+        #heading-box { font-size: 28vw; }
+        #speed-box { font-size: 32vw; }
 
-        /* Valor real por cima */
-        .value { 
-            position: relative; z-index: 2; 
-            text-shadow: 0 0 15px var(--glow);
-            color: var(--led-on);
+        .degree-symbol { 
+            font-family: Arial, sans-serif; font-size: 10vw; 
+            position: absolute; right: -8vw; top: 2vw; 
         }
-
-        /* Tamanhos específicos */
-        #bearing-display { font-size: 38vw; }
-        #speed-display { font-size: 38vw; }
-        .degree-symbol { font-size: 15vw; position: absolute; right: -12vw; top: 0; }
 
         .separator { 
-            width: 85%; height: 2px; background: var(--led-on); opacity: 0.3;
-            margin: 4vh 0; 
+            width: 90%; height: 1px; background: var(--on); opacity: 0.3;
+            margin: 20px 0; 
         }
 
-        /* Botões laterais */
-        .fab {
-            position: absolute; width: 45px; height: 45px; border-radius: 8px;
-            background: #111; border: 1px solid #333; color: white;
-            display: flex; align-items: center; justify-content: center; z-index: 1000;
-        }
-        #openWeather { top: 20px; left: 20px; }
-        #toggleMode { top: 20px; right: 20px; }
+        /* Espaçamento extra na velocidade conforme mockup */
+        #speed-section { margin-top: 40px; display: flex; flex-direction: column; align-items: center; }
 
-        /* Rodapé Coordenadas */
-        #footer { position: absolute; bottom: 20px; text-align: center; width: 100%; font-family: monospace; }
-        #coords { font-size: 14px; letter-spacing: 1px; margin-bottom: 5px; font-weight: bold; }
-        #info { font-size: 11px; opacity: 0.5; text-transform: uppercase; letter-spacing: 2px; }
+        /* Footer - Posição Mockup */
+        #footer {
+            padding: 20px 0; text-align: center; border-top: 1px solid #111;
+            font-family: 'Courier New', monospace; width: 100%;
+        }
+
+        #coords { font-size: 13px; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: bold; }
+        #precision { font-size: 10px; opacity: 0.5; text-transform: uppercase; letter-spacing: 2px; }
 
         /* Overlay Weather */
-        #weather-screen {
+        #weather-overlay {
             position: fixed; inset: 0; background: #000; z-index: 2000; display: none;
-            padding: 20px; flex-direction: column; overflow-y: auto;
+            padding: 20px; flex-direction: column;
         }
-        #weather-screen.active { display: flex; }
-        .close-btn { padding: 15px; background: var(--bordeaux); color: white; border: none; border-radius: 8px; font-weight: bold; margin-bottom: 15px; }
+        #weather-overlay.active { display: flex; }
+        .close-btn { padding: 15px; background: var(--on); color: #000; border: none; font-weight: bold; border-radius: 4px; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th, td { padding: 10px 5px; border-bottom: 1px solid #222; text-align: center; }
+        th, td { padding: 12px 5px; border-bottom: 1px solid #222; text-align: center; }
     </style>
 </head>
 <body>
 
-    <button id="openWeather" class="fab">⚓</button>
-    <button id="toggleMode" class="fab">🌓</button>
+    <div id="top-nav">
+        <button id="openWeather" class="icon-btn">⚓</button>
+        <button id="toggleMode" class="icon-btn">🌓</button>
+    </div>
 
-    <div id="dash">
-        <div class="display-container">
-            <span class="label">HEADING</span>
-            <div class="digital-wrapper">
-                <div class="ghost" id="bearing-display">888</div>
-                <div class="value" id="bearing-display"><span id="bearing">000</span><span class="degree-symbol">°</span></div>
-            </div>
+    <div id="main-display">
+        <div class="label">HEADING</div>
+        <div class="lcd-wrapper" id="heading-box">
+            <div class="lcd-ghost">888</div>
+            <div class="lcd-value"><span id="val-heading">000</span><span class="degree-symbol">°</span></div>
         </div>
 
         <div class="separator"></div>
 
-        <div class="display-container" style="margin-top: 2vh;">
-            <div class="digital-wrapper">
-                <div class="ghost" id="speed-display">88.8</div>
-                <div class="value" id="speed-display"><span id="speed">00.0</span></div>
+        <div id="speed-section">
+            <div class="lcd-wrapper" id="speed-box">
+                <div class="lcd-ghost">88.8</div>
+                <div class="lcd-value" id="val-speed">00.0</div>
             </div>
-            <span class="label" style="margin-top: 10px;">KNOTS</span>
+            <div class="label">KNOTS</div>
         </div>
     </div>
 
     <div id="footer">
-        <div id="coords">LAT: --.---- N | LON: --.---- W</div>
-        <div id="info">PRECISÃO: --M | GPS STATUS OK</div>
+        <div id="coords">LAT: --.----° N | LON: --.----° W</div>
+        <div id="precision">PRECISÃO: --M | GPS STATUS OK</div>
     </div>
 
-    <div id="weather-screen">
-        <button class="close-btn" id="closeWeather">VOLTAR</button>
-        <h3 id="loc-tag" style="text-align:center; color:white; font-size:12px;"></h3>
-        <table>
-            <thead><tr><th>H</th><th>Kn</th><th>Dir</th><th>m</th><th>Dir</th></tr></thead>
-            <tbody id="forecast-table"></tbody>
-        </table>
+    <div id="weather-overlay">
+        <button class="close-btn" onclick="toggleWeather()">VOLTAR</button>
+        <div id="meteo-body"></div>
     </div>
 
     <script>
         const state = { lat: null, lon: null, speed: 0 };
-        const speedEl = document.getElementById('speed');
-        const bearingEl = document.getElementById('bearing');
-        const coordsEl = document.getElementById('coords');
-        const infoEl = document.getElementById('info');
-        const weatherScreen = document.getElementById('weather-screen');
+        
+        // Elementos
+        const elSpeed = document.getElementById('val-speed');
+        const elHeading = document.getElementById('val-heading');
+        const elCoords = document.getElementById('coords');
+        const elPrec = document.getElementById('precision');
+        const overlay = document.getElementById('weather-overlay');
 
+        // Modo Noite
         document.getElementById('toggleMode').onclick = () => document.body.classList.toggle('night-mode');
 
-        // GPS e Bússola
+        // GPS
         if ("geolocation" in navigator) {
             navigator.geolocation.watchPosition((pos) => {
-                state.lat = pos.coords.latitude;
-                state.lon = pos.coords.longitude;
-                state.speed = pos.coords.speed || 0;
+                const { latitude, longitude, speed, heading, accuracy } = pos.coords;
+                state.lat = latitude;
+                state.lon = longitude;
+                state.speed = speed || 0;
 
-                // Velocidade em Knots (00.0 format)
+                // Velocidade em Knots (00.0)
                 let kn = state.speed * 1.94384;
-                let formattedSpeed = (kn > 0.1 ? kn.toFixed(1) : "00.0").padStart(4, '0');
-                speedEl.innerText = formattedSpeed;
+                elSpeed.innerText = (kn > 0.1 ? kn.toFixed(1) : "00.0").padStart(4, '0');
 
-                // Heading (000 format)
-                if (pos.coords.heading !== null && state.speed > 0.5) {
-                    bearingEl.innerText = Math.round(pos.coords.heading).toString().padStart(3, '0');
+                // Heading (000)
+                if (heading !== null && state.speed > 0.5) {
+                    elHeading.innerText = Math.round(heading).toString().padStart(3, '0');
                 }
 
-                coordsEl.innerText = `LAT: ${Math.abs(state.lat).toFixed(4)}° ${state.lat >= 0 ? 'N' : 'S'} | LON: ${Math.abs(state.lon).toFixed(4)}° ${state.lon >= 0 ? 'E' : 'W'}`;
-                infoEl.innerText = `PRECISÃO: ${Math.round(pos.coords.accuracy)}M | GPS OK`;
+                // Coordenadas formatadas como no Mockup
+                const latD = Math.abs(latitude).toFixed(4);
+                const lonD = Math.abs(longitude).toFixed(4);
+                elCoords.innerText = `LAT: ${latD}° ${latitude >= 0 ? 'N' : 'S'} | LON: ${lonD}° ${longitude >= 0 ? 'E' : 'W'}`;
+                elPrec.innerText = `PRECISÃO: ${Math.round(accuracy)}M | GPS OK`;
             }, null, { enableHighAccuracy: true });
         }
 
+        // Bússola
         window.addEventListener('deviceorientationabsolute', (e) => {
             if (state.speed < 1 && e.alpha !== null) {
                 let h = Math.round(360 - e.alpha);
-                bearingEl.innerText = h.toString().padStart(3, '0');
+                elHeading.innerText = h.toString().padStart(3, '0');
             }
         }, true);
 
-        // Weather Logic
-        document.getElementById('openWeather').onclick = () => {
-            if (!state.lat) return alert("Aguarde sinal GPS.");
-            weatherScreen.classList.add('active');
-            fetchWeather();
-        };
-        document.getElementById('closeWeather').onclick = () => weatherScreen.classList.remove('active');
+        // Weather
+        function toggleWeather() {
+            if (!state.lat) return alert("Sinal GPS insuficiente.");
+            overlay.classList.toggle('active');
+            if (overlay.classList.contains('active')) fetchWeather();
+        }
+        document.getElementById('openWeather').onclick = toggleWeather;
 
         async function fetchWeather() {
-            const table = document.getElementById('forecast-table');
-            table.innerHTML = '<tr><td colspan="5">A carregar...</td></tr>';
+            const body = document.getElementById('meteo-body');
+            body.innerHTML = "<p style='text-align:center'>A carregar previsões...</p>";
             try {
                 const url = `https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=auto`;
-                const marUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${state.lat}&longitude=${state.lon}&hourly=wave_height,wave_direction&timezone=auto`;
+                const mar = `https://marine-api.open-meteo.com/v1/marine?latitude=${state.lat}&longitude=${state.lon}&hourly=wave_height&timezone=auto`;
+                const [r1, r2] = await Promise.all([fetch(url), fetch(mar)]);
+                const d1 = await r1.json(); const d2 = await r2.json();
                 
-                const [resL, resM] = await Promise.allSettled([fetch(url), fetch(marUrl)]);
-                const dL = await resL.value.json();
-                const dM = resM.status === 'fulfilled' ? await resM.value.json() : null;
-
-                let html = '';
-                const now = new Date().getHours();
-                for (let i = now; i < now + 12; i++) {
-                    if (!dL.hourly) break;
-                    html += `<tr>
-                        <td>${dL.hourly.time[i].split('T')[1]}</td>
-                        <td><b>${dL.hourly.wind_speed_10m[i].toFixed(1)}</b></td>
-                        <td>${dL.hourly.wind_direction_10m[i]}°</td>
-                        <td>${dM?.hourly?.wave_height ? dM.hourly.wave_height[i].toFixed(1) : '--'}</td>
-                        <td>${dM?.hourly?.wave_direction ? dM.hourly.wave_direction[i] + '°' : '--'}</td>
-                    </tr>`;
+                let html = "<table><tr><th>H</th><th>Kn</th><th>Dir</th><th>Onda</th></tr>";
+                for (let i = new Date().getHours(); i < new Date().getHours() + 12; i++) {
+                    if (!d1.hourly) break;
+                    html += `<tr><td>${d1.hourly.time[i].split('T')[1]}</td><td>${d1.hourly.wind_speed_10m[i].toFixed(1)}</td><td>${d1.hourly.wind_direction_10m[i]}°</td><td>${d2.hourly ? d2.hourly.wave_height[i].toFixed(1) + 'm' : '--'}</td></tr>`;
                 }
-                table.innerHTML = html;
-            } catch (e) { table.innerHTML = '<tr><td colspan="5">Erro de rede</td></tr>'; }
+                body.innerHTML = html + "</table>";
+            } catch (e) { body.innerHTML = "Erro de rede."; }
         }
 
         // Wake Lock
