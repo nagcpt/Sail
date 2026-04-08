@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>UltraDash Final</title>
+    <title>UltraDash Precision</title>
     
-    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlVsdHJhRGFzaCBQcm8iLAogICJzaG9ydF9uYW1lIjogIlVsdHJhRGFzaCIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMDAwMDAwIiwKICAidGhlbWVfY29sb3ciOiAiIzAwMDAwMCIKfQ==">
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlVsdHJhRGFzaCBFbGl0ZSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMDAwMDAwIiwKICAidGhlbWVfY29sb3ciOiAiIzAwMDAwMCIKfQ==">
 
     <style>
         :root {
@@ -37,17 +37,19 @@
         #dash { text-align: center; width: 100%; user-select: none; }
 
         .big-font {
-            font-size: 38vw; 
             font-weight: 900;
             line-height: 0.85;
             font-variant-numeric: tabular-nums;
             display: block;
         }
 
+        #bearing { font-size: 35vw; } /* Ligeiramente menor para caber o símbolo ° */
+        #speed { font-size: 38vw; }
+
         .separator {
             width: 70%; height: 4px;
             background-color: var(--accent);
-            margin: 4vh auto;
+            margin: 3vh auto;
             border-radius: 10px;
         }
 
@@ -67,10 +69,21 @@
             display: flex; align-items: center; justify-content: center;
         }
 
-        #status {
-            position: absolute; bottom: 15px;
-            font-size: 10px; color: var(--accent);
+        #status-container {
+            position: absolute; bottom: 20px;
+            text-align: center; width: 100%;
+            font-family: monospace;
+        }
+
+        #coords {
+            font-size: 3.5vw; color: var(--text);
+            opacity: 0.8; margin-bottom: 5px;
             letter-spacing: 1px;
+        }
+
+        #info {
+            font-size: 2.5vw; color: var(--accent);
+            text-transform: uppercase; letter-spacing: 2px;
         }
     </style>
 </head>
@@ -79,84 +92,82 @@
     <button id="toggleMode">🌓</button>
 
     <div id="dash">
-        <div id="bearing" class="big-font">--</div>
+        <div id="bearing" class="big-font">0°</div>
         <div class="separator"></div>
         <div id="speed" class="big-font">0</div>
         <div id="unit">KM/H</div>
     </div>
 
-    <div id="status">A INICIALIZAR SENSORES...</div>
+    <div id="status-container">
+        <div id="coords">LAT: --- | LON: ---</div>
+        <div id="info">A SINTONIZAR GPS...</div>
+    </div>
 
     <script>
         const speedEl = document.getElementById('speed');
         const bearingEl = document.getElementById('bearing');
-        const statusEl = document.getElementById('status');
+        const coordsEl = document.getElementById('coords');
+        const infoEl = document.getElementById('info');
         const btnMode = document.getElementById('toggleMode');
 
         let lastSpeed = 0;
 
-        // Alternar Modo Noturno
         btnMode.addEventListener('click', () => {
             document.body.classList.toggle('night-mode');
             btnMode.innerText = document.body.classList.contains('night-mode') ? '☀️' : '🌓';
             if (navigator.vibrate) navigator.vibrate(20);
         });
 
-        function getCardinals(deg) {
-            if (deg === null || deg === undefined) return "--";
-            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
-            // Ajuste para garantir que 0 é Norte e o cálculo é circular
-            const normalized = ((deg % 360) + 360) % 360;
-            return directions[Math.round(normalized / 45) % 8];
+        // Formata os graus para 0-359
+        function formatHeading(deg) {
+            if (deg === null || deg === undefined) return "0°";
+            let d = Math.round(((deg % 360) + 360) % 360);
+            return d + "°";
         }
 
-        // 1. Rumo via Bússola (Magnetómetro) - Funciona parado
+        // Bússola (Alpha) para quando parado
         window.addEventListener('deviceorientationabsolute', (event) => {
-            if (lastSpeed < 5) { // Só usa bússola se estiver parado ou muito lento
+            if (lastSpeed < 5) {
                 let heading = event.alpha;
                 if (heading !== null) {
-                    // No Android deviceorientationabsolute o 0 é o Norte
-                    // mas pode variar conforme a orientação do tlm.
-                    bearingEl.innerText = getCardinals(360 - heading);
-                    bearingEl.style.opacity = "0.6";
+                    // Invertemos para alinhar o Norte com o topo do telemóvel
+                    bearingEl.innerText = formatHeading(360 - heading);
+                    bearingEl.style.opacity = "0.5";
                 }
             }
         }, true);
 
-        // 2. Dados via GPS
-        function updateGPS(pos) {
-            const { speed, heading, accuracy } = pos.coords;
+        // Atualização Principal
+        function updatePosition(pos) {
+            const { speed, heading, accuracy, latitude, longitude } = pos.coords;
             
-            // Filtro de velocidade (ignora ruído de sinal abaixo de 0.5 m/s)
+            // Velocidade (m/s para km/h)
             let kmh = (speed && speed > 0.5) ? Math.round(speed * 3.6) : 0;
             lastSpeed = kmh;
-
             speedEl.innerText = kmh;
 
-            // Se estiver em movimento, o GPS é muito mais fiável que a bússola
+            // Rumo via GPS (Prioritário em movimento)
             if (kmh >= 5 && heading !== null) {
-                bearingEl.innerText = getCardinals(heading);
+                bearingEl.innerText = formatHeading(heading);
                 bearingEl.style.opacity = "1";
             }
 
-            statusEl.innerText = `PRECISÃO: ${Math.round(accuracy)}M | GPS ATIVO`;
+            // Coordenadas
+            coordsEl.innerText = `LAT: ${latitude.toFixed(5)} | LON: ${longitude.toFixed(5)}`;
+            infoEl.innerText = `PRECISÃO: ${Math.round(accuracy)}M | GPS ATIVO`;
         }
 
         if ("geolocation" in navigator) {
-            navigator.geolocation.watchPosition(updateGPS, 
-                (err) => { statusEl.innerText = "ERRO GPS: " + err.message; }, 
+            navigator.geolocation.watchPosition(updatePosition, 
+                (err) => { infoEl.innerText = "ERRO GPS: " + err.message; }, 
                 { enableHighAccuracy: true, maximumAge: 0 }
             );
         }
 
-        // 3. Wake Lock (Manter ecrã ligado)
+        // Wake Lock
         let wakeLock = null;
         const requestWakeLock = async () => {
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                }
-            } catch (err) {}
+            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
         };
         requestWakeLock();
         document.addEventListener('visibilitychange', () => {
