@@ -292,10 +292,45 @@ const elCoords = document.getElementById('coords');
 const elPrec   = document.getElementById('prec');
 const wxPanel  = document.getElementById('wx');
 
+/* ── Heading damping (filtro passa-baixo angular) ──
+ * α = fator de suavização: 0.02 = muito lento/náutico, 0.1 = mais ágil.
+ * Trabalha com sin/cos para evitar o salto 359°→1°.
+ */
+const DAMP = { sin: null, cos: null, α: 0.04 };
+
+function dampHeading(rawDeg) {
+    const r = (rawDeg * Math.PI) / 180;
+    if (DAMP.sin === null) { DAMP.sin = Math.sin(r); DAMP.cos = Math.cos(r); }
+    DAMP.sin += DAMP.α * (Math.sin(r) - DAMP.sin);
+    DAMP.cos += DAMP.α * (Math.cos(r) - DAMP.cos);
+    let smoothed = (Math.atan2(DAMP.sin, DAMP.cos) * 180) / Math.PI;
+    return ((smoothed % 360) + 360) % 360;
+}
+
+let _rafH = null;
+function animateHeading(targetRaw) {
+    // Guarda o target; o loop de animação trata da transição
+    DAMP._target = targetRaw;
+    if (_rafH) return; // já está a correr
+    function tick() {
+        const d = dampHeading(DAMP._target);
+        const s = Math.round(d).toString().padStart(3, '0');
+        H.forEach((el, i) => el.textContent = s[i]);
+        // Para quando a diferença é < 0.1°
+        const r = (DAMP._target * Math.PI) / 180;
+        const diff = Math.abs(Math.atan2(
+            Math.sin(r) - DAMP.sin,
+            Math.cos(r) - DAMP.cos
+        )) * (180 / Math.PI);
+        if (diff > 0.15) { _rafH = requestAnimationFrame(tick); }
+        else { _rafH = null; }
+    }
+    _rafH = requestAnimationFrame(tick);
+}
+
 /* ── Render helpers ── */
 function renderHeading(deg) {
-    const s = Math.round(((deg % 360) + 360) % 360).toString().padStart(3,'0');
-    H.forEach((el, i) => el.textContent = s[i]);
+    animateHeading(((deg % 360) + 360) % 360);
 }
 
 function renderSpeed(ms) {
